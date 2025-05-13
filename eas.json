@@ -1,0 +1,30 @@
+{
+  "cli": {
+    "version": ">= 16.3.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "danielshlomo14@gmail.com",
+        "ascAppId": "6745816161",
+        "appleTeamId": "G8LBT6KC7T"
+      }
+    }
+  }
+}
