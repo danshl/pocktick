@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AboutUsScreen() {
   const router = useRouter();
@@ -36,9 +37,15 @@ export default function AboutUsScreen() {
         <Text style={styles.bold}>This is the first secure app that manages all your tickets in one place and enables fraud-free resale.</Text>
       </Text>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push('/login')}>
-        <Text style={styles.buttonText}>Back to Login</Text>
-      </TouchableOpacity>
+      <TouchableOpacity
+  style={styles.button}
+  onPress={async () => {
+    await AsyncStorage.removeItem('authToken');
+    router.push('/login');
+  }}
+>
+  <Text style={styles.buttonText}>Back to Login</Text>
+</TouchableOpacity>
     </ScrollView>
   );
 }

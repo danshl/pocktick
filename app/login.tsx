@@ -18,7 +18,8 @@ export default function AuthScreen() {
   const router = useRouter();
 
   
-  const { promptAsync } = useGoogleLogin();
+const { signIn } = useGoogleLogin();
+
 
   
   const handleLogin = async () => {
@@ -153,7 +154,7 @@ export default function AuthScreen() {
                 value={email}
                 onChangeText={setEmail}
               />
-              <Text style={styles.label}>Passwordx</Text>
+              <Text style={styles.label}>Passwordxs</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 placeholder="Enter your password"
@@ -181,7 +182,7 @@ export default function AuthScreen() {
                 <Image source={require('../assets/images/apple-logo.png')} style={styles.socialIcon} />
                 <Text style={styles.socialText}>Login with Apple</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}  onPress={() => promptAsync()}>
+              <TouchableOpacity style={styles.socialButton}  onPress={signIn}>
                 <Image source={require('../assets/images/google.png')} style={styles.socialIcon} />
                 <Text style={styles.socialText}>Login with Google</Text>
               </TouchableOpacity>
