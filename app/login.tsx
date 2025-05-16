@@ -6,6 +6,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import  useGoogleLogin from './GoogleSignIn';
+import { signInWithApple } from './AppleSignIn';
 
 export default function AuthScreen() {
   const [selectedTab, setSelectedTab] = useState<'login' | 'signup'>('login');
@@ -19,6 +20,8 @@ export default function AuthScreen() {
 
   
 const { signIn } = useGoogleLogin();
+
+
 
 
   
@@ -178,7 +181,7 @@ const { signIn } = useGoogleLogin();
                 <View style={styles.line} />
               </View>
 
-              <TouchableOpacity style={styles.socialButton}>
+              <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
                 <Image source={require('../assets/images/apple-logo.png')} style={styles.socialIcon} />
                 <Text style={styles.socialText}>Login with Apple</Text>
               </TouchableOpacity>

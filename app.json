@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pocktick.app",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
