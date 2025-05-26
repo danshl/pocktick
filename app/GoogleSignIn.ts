@@ -7,6 +7,7 @@ import { Alert } from 'react-native';
 GoogleSignin.configure({
   webClientId: '1087486296114-p6rqrktpn5o4n487bpgm7gv8otco82tr.apps.googleusercontent.com',
   offlineAccess: true,
+  iosClientId:'1087486296114-8rtveh0oga5ni88hc3925vbiu4j2nb36.apps.googleusercontent.com',
 });
 
 export default function useGoogleLogin() {
@@ -15,13 +16,15 @@ export default function useGoogleLogin() {
 
   const signIn = async () => {
     try {
+      console.log("a");
       await GoogleSignin.hasPlayServices();
+      console.log("b");
       await GoogleSignin.signOut();
       const response = await GoogleSignin.signIn();
-
+      console.log("c");
       if (isSuccessResponse(response)) {
         const { idToken } = response.data;
-
+        console.log(idToken);
         const apiResponse = await fetch(
           'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login-with-google',
           {
