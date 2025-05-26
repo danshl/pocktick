@@ -20,9 +20,9 @@ export async function signInWithApple() {
     }
   } catch (e: any) {
     if (e.code === 'ERR_REQUEST_CANCELED') {
-      console.log('🚫 Apple login canceled by user');
+      console.log('Apple login canceled by user');
     } else {
-      console.error('❌ Apple login error:', e);
+      console.error('Apple login error:', e);
     }
   }
 }

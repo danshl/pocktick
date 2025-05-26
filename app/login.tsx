@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import  useGoogleLogin from './GoogleSignIn';
 import { signInWithApple } from './AppleSignIn';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 export default function AuthScreen() {
   const [selectedTab, setSelectedTab] = useState<'login' | 'signup'>('login');
@@ -22,8 +23,27 @@ export default function AuthScreen() {
 const { signIn } = useGoogleLogin();
 
 
+  const signInWithApple = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
 
-
+      // הצלחה
+      Alert.alert('התחברות הצליחה', `Token: ${credential.identityToken?.slice(0, 10)}...`);
+      // או כאן תשלח לשרת שלך את הטוקן
+    } catch (e: any) {
+      if (e.code === 'ERR_REQUEST_CANCELED') {
+        Alert.alert('התחברות בוטלה', 'המשתמש ביטל את התחברות Apple');
+      } else {
+        Alert.alert('שגיאה בהתחברות', e.message || 'שגיאה לא ידועה');
+        console.error('Apple Sign-In Error:', e);
+      }
+    }
+  };
   
   const handleLogin = async () => {
     try {
@@ -148,7 +168,7 @@ const { signIn } = useGoogleLogin();
         <View style={styles.frameContainer}>
           {selectedTab === 'login' ? (
             <>
-              <Text style={styles.label}>Your Email.</Text>
+              <Text style={styles.label}>Your Email</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter your email"
@@ -157,7 +177,7 @@ const { signIn } = useGoogleLogin();
                 value={email}
                 onChangeText={setEmail}
               />
-              <Text style={styles.label}>Passwordxs</Text>
+              <Text style={styles.label}>Password</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 placeholder="Enter your password"
@@ -181,10 +201,12 @@ const { signIn } = useGoogleLogin();
                 <View style={styles.line} />
               </View>
 
-              <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
-                <Image source={require('../assets/images/apple-logo.png')} style={styles.socialIcon} />
-                <Text style={styles.socialText}>Login with Apple</Text>
-              </TouchableOpacity>
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
+                  <Image source={require('../assets/images/apple-logo.png')} style={styles.socialIcon} />
+                  <Text style={styles.socialText}>Login with Apple</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.socialButton}  onPress={signIn}>
                 <Image source={require('../assets/images/google.png')} style={styles.socialIcon} />
                 <Text style={styles.socialText}>Login with Google</Text>

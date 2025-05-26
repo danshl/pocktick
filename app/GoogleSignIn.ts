@@ -2,6 +2,7 @@ import { GoogleSignin, statusCodes, SignInResponse, isSuccessResponse } from '@r
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 
 GoogleSignin.configure({
   webClientId: '1087486296114-p6rqrktpn5o4n487bpgm7gv8otco82tr.apps.googleusercontent.com',
@@ -15,11 +16,12 @@ export default function useGoogleLogin() {
   const signIn = async () => {
     try {
       await GoogleSignin.hasPlayServices();
+      await GoogleSignin.signOut();
       const response = await GoogleSignin.signIn();
+
       if (isSuccessResponse(response)) {
         const { idToken } = response.data;
-        console.log(idToken);
-        // בקשת התחברות לשרת עם הטוקן מ-Google
+
         const apiResponse = await fetch(
           'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login-with-google',
           {
@@ -30,28 +32,31 @@ export default function useGoogleLogin() {
         );
 
         const result = await apiResponse.json();
-        console.log(result);
+
         if (!apiResponse.ok) {
-          console.error('Server rejected the token:', result.message);
+          Alert.alert('שגיאה בהתחברות', result.message || 'השרת דחה את ההתחברות');
           return;
         }
 
-        // שמור את ה-JWT שהשרת מחזיר
         await AsyncStorage.setItem('authToken', result.token);
         await AsyncStorage.setItem('userEmail', result.email);
 
+        Alert.alert('התחברת בהצלחה', `ברוך הבא, ${result.name || 'משתמש'}`);
         router.replace('/(tabs)/my-tickets');
       }
     } catch (error: any) {
+      let errorMsg = 'שגיאה לא ידועה התרחשה';
+
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('User cancelled the login.');
+        errorMsg = 'המשתמש ביטל את ההתחברות';
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('Login already in progress.');
+        errorMsg = 'תהליך התחברות כבר מתבצע';
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        console.log('Google Play Services not available.');
-      } else {
-        console.error('Unknown error during Google Sign-In', error);
+        errorMsg = 'Google Play Services לא זמינים';
       }
+
+      Alert.alert('שגיאה בהתחברות', errorMsg);
+      Alert.alert('Google Sign-In Error:', error);
     }
   };
 
