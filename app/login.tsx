@@ -23,27 +23,57 @@ export default function AuthScreen() {
 const { signIn } = useGoogleLogin();
 
 
-  const signInWithApple = async () => {
-    try {
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
+const signInWithApple = async () => {
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
 
-      // הצלחה
-      Alert.alert('התחברות הצליחה', `Token: ${credential.identityToken?.slice(0, 10)}...`);
-      // או כאן תשלח לשרת שלך את הטוקן
-    } catch (e: any) {
-      if (e.code === 'ERR_REQUEST_CANCELED') {
-        Alert.alert('התחברות בוטלה', 'המשתמש ביטל את התחברות Apple');
-      } else {
-        Alert.alert('שגיאה בהתחברות', e.message || 'שגיאה לא ידועה');
-        console.error('Apple Sign-In Error:', e);
-      }
+    const token = credential.identityToken;
+    const fullName = "Israel israeli"; 
+
+    if (!token) {
+      Alert.alert('שגיאה', 'לא התקבל טוקן מ־Apple');
+      return;
     }
-  };
+    console.log(token,fullName);
+    const response = await fetch(
+      'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login-with-apple',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: token,
+          fullName: fullName,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('שגיאה בהתחברות', result.message || 'התחברות נכשלה');
+      return;
+    }
+
+    await AsyncStorage.setItem('authToken', result.token);
+    await AsyncStorage.setItem('userEmail', result.email);
+
+    Alert.alert('התחברות הצליחה', `ברוך הבא!`);
+    router.replace('/(tabs)/my-tickets');
+  } catch (e: any) {
+    if (e.code === 'ERR_REQUEST_CANCELED') {
+      Alert.alert('ביטול', 'המשתמש ביטל את ההתחברות עם Apple');
+    } else {
+      Alert.alert('שגיאה בהתחברות', e.message || 'שגיאה לא צפויה');
+      console.error('Apple Sign-In Error:', e);
+    }
+  }
+};
+
   
   const handleLogin = async () => {
     try {
