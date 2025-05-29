@@ -14,7 +14,7 @@ export default function AboutUsScreen() {
       <Text style={styles.title}>About Us</Text>
 
       <Text style={styles.paragraph}>
-        Welcome to <Text style={styles.bold}>Ticket Exchange</Text> – your one-stop solution for storing and managing all your event tickets in one place.
+        Welcome to <Text style={styles.bold}>PockTick</Text> – your one-stop solution for storing and managing all your event tickets in one place.
       </Text>
 
       <Text style={styles.paragraph}>
@@ -36,16 +36,6 @@ export default function AboutUsScreen() {
       <Text style={styles.paragraph}>
         <Text style={styles.bold}>This is the first secure app that manages all your tickets in one place and enables fraud-free resale.</Text>
       </Text>
-
-      <TouchableOpacity
-  style={styles.button}
-  onPress={async () => {
-    await AsyncStorage.removeItem('authToken');
-    router.push('/login');
-  }}
->
-  <Text style={styles.buttonText}>Back to Login</Text>
-</TouchableOpacity>
     </ScrollView>
   );
 }

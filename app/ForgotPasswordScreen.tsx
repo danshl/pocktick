@@ -13,12 +13,14 @@ import { useRouter } from 'expo-router';
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
 
   const handleForgotPassword = async () => {
     if (!email) return;
 
     setLoading(true);
+    setErrorMessage('');
     try {
       const response = await fetch(
         'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/forgot-password',
@@ -34,14 +36,15 @@ export default function ForgotPasswordScreen() {
       if (response.ok) {
         Alert.alert(
           'Check your email',
-          'A reset code has been sent if this email exists.'
+          'A reset code has been sent to your email.'
         );
         router.push({ pathname: '/VerifyCodeScreen', params: { email } });
       } else {
-        Alert.alert('Error', data.message || 'Email not found.');
+        setErrorMessage('We couldn’t find an account with this email address. Please make sure it’s correct or try a different one.');
+
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again later.');
+      setErrorMessage('Something went wrong. Please try again later.');
     }
     setLoading(false);
   };
@@ -88,6 +91,11 @@ export default function ForgotPasswordScreen() {
           {loading ? 'Sending...' : 'Reset Password'}
         </Text>
       </TouchableOpacity>
+
+      {/* Error message under the button */}
+      {errorMessage ? (
+        <Text style={styles.errorTextBelowButton}>{errorMessage}</Text>
+      ) : null}
     </View>
   );
 }
@@ -101,7 +109,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 90, // Adjusted according to status bar
+    top: 90,
     left: 20,
     zIndex: 10,
   },
@@ -159,5 +167,12 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: 'rgba(29, 43, 100, 0.4)',
+  },
+  errorTextBelowButton: {
+    color: 'red',
+    fontSize: 13,
+    marginTop: 12,
+    textAlign: 'center',
+    top: 130,
   },
 });

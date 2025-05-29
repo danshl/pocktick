@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Image, Alert
+  StyleSheet, Image
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
@@ -12,13 +12,17 @@ export default function VerifyEmailScreen() {
   const [code, setCode] = useState<string[]>(["", "", "", "", ""]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorColor, setErrorColor] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0);
-  const inputsRef = useRef<(TextInput | null)[]>([]);
+  const [cooldown, setCooldown] = useState<number>(0);
+  const [cooldownError, setCooldownError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const inputsRef = useRef<Array<TextInput | null>>([]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (cooldown > 0) {
       timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    } else {
+      setCooldownError(null);
     }
     return () => clearTimeout(timer);
   }, [cooldown]);
@@ -34,6 +38,12 @@ export default function VerifyEmailScreen() {
   };
 
   const handleSendCode = async () => {
+    if (cooldown > 0) {
+      setCooldownError(`Please wait ${cooldown} seconds before trying again.`);
+      setSendError(null);
+      return;
+    }
+
     try {
       const response = await fetch("https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/send-email-code", {
         method: "POST",
@@ -43,14 +53,15 @@ export default function VerifyEmailScreen() {
 
       const result = await response.json();
       if (response.ok) {
-        //Alert.alert("Verification code sent!", "Check your inbox.");
         setCodeSent(true);
         setCooldown(60);
+        setCooldownError(null);
+        setSendError(null);
       } else {
-        Alert.alert("Failed to send code", result.message || "Unknown error");
+        setSendError(result.message || "Unknown error");
       }
     } catch {
-      Alert.alert("Server error", "Could not send code.");
+      setSendError("Server error: Could not send code.");
     }
   };
 
@@ -104,16 +115,21 @@ export default function VerifyEmailScreen() {
       </Text>
 
       {!codeSent ? (
-        <TouchableOpacity style={styles.verifyButton} onPress={handleSendCode}>
-          <Text style={styles.verifyButtonText}>Send Code</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity style={styles.verifyButton} onPress={handleSendCode}>
+            <Text style={styles.verifyButtonText}>Send Code</Text>
+          </TouchableOpacity>
+          {(cooldownError || sendError) && (
+            <Text style={styles.cooldownError}>{cooldownError || sendError}</Text>
+          )}
+        </>
       ) : (
         <>
           <View style={styles.codeContainer}>
             {code.map((digit, index) => (
               <TextInput
                 key={index}
-                ref={(el) => (inputsRef.current[index] = el)}
+                ref={(el: TextInput | null) => { inputsRef.current[index] = el; }}
                 style={styles.codeInput}
                 keyboardType="number-pad"
                 maxLength={1}
@@ -138,7 +154,7 @@ export default function VerifyEmailScreen() {
       )}
 
       {statusMessage && (
-        <Text style={[styles.statusMessage, { color: errorColor || "#000" }]}> {statusMessage} </Text>
+        <Text style={[styles.statusMessage, { color: errorColor || "#000" }]}>{statusMessage}</Text>
       )}
     </View>
   );
@@ -230,5 +246,11 @@ const styles = StyleSheet.create({
   resendLink: {
     color: '#1D2B64',
     fontWeight: 'bold',
+  },
+  cooldownError: {
+    marginTop: 8,
+    color: '#D32F2F',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

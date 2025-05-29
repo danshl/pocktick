@@ -198,6 +198,6 @@ const styles = StyleSheet.create({
   },
 
   disabledButton: {
-    backgroundColor: '#C0D3F8',
+    backgroundColor: '#8085A3',
   },
 });

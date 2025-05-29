@@ -17,6 +17,8 @@ export default function AuthScreen() {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const router = useRouter();
 
   
@@ -61,12 +63,10 @@ const signInWithApple = async () => {
 
     await AsyncStorage.setItem('authToken', result.token);
     await AsyncStorage.setItem('userEmail', result.email);
-
-    Alert.alert('התחברות הצליחה', `ברוך הבא!`);
     router.replace('/(tabs)/my-tickets');
   } catch (e: any) {
     if (e.code === 'ERR_REQUEST_CANCELED') {
-      Alert.alert('ביטול', 'המשתמש ביטל את ההתחברות עם Apple');
+      console.log('ביטול', 'המשתמש ביטל את ההתחברות עם Apple');
     } else {
       Alert.alert('שגיאה בהתחברות', e.message || 'שגיאה לא צפויה');
       console.error('Apple Sign-In Error:', e);
@@ -75,67 +75,69 @@ const signInWithApple = async () => {
 };
 
   
-  const handleLogin = async () => {
-    try {
-      setError(false);
-  
-      const response = await fetch(
-        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-  
-      const result = await response.json();
-      console.log(result);
-  
-      if (!response.ok) {
-        if (
-          response.status === 401 &&
-          result.message === 'Please verify your email before logging in.'
-        ) {
-          Alert.alert(
-            'Email Not Verified',
-            'Please verify your email to continue.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  router.push({
-                    pathname: '/VerifyEmailScreen',
-                    params: { email }
-                  });
-                }
-              }
-            ],
-            { cancelable: false }
-          );
-          return;
-        }
-          if (
-          response.status === 400 &&
-          result.message?.toLowerCase().includes('too many failed login attempts')
-        ) {
-          Alert.alert('Too Many Attempts', 'Too many failed login attempts. Please try again in 15 minutes.');
-          return;
-        }
+const handleLogin = async () => {
+  try {
+    setError(false);
+    setIsLoading(true); // התחל טעינה
 
-        setError(true);
+    const response = await fetch(
+      'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      }
+    );
+
+    const result = await response.json();
+    console.log(result);
+
+    if (!response.ok) {
+      if (
+        response.status === 401 &&
+        result.message === 'Please verify your email before logging in.'
+      ) {
+        Alert.alert(
+          'Email Not Verified',
+          'Please verify your email to continue.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                router.push({
+                  pathname: '/VerifyEmailScreen',
+                  params: { email }
+                });
+              }
+            }
+          ]
+        );
+        return;
+      }
+      if (
+        response.status === 400 &&
+        result.message?.toLowerCase().includes('too many failed login attempts')
+      ) {
+        Alert.alert('Too Many Attempts', 'Please try again in 15 minutes.');
         return;
       }
 
-      await AsyncStorage.setItem('authToken', result.token);
-      await AsyncStorage.setItem('userEmail', email);
-      router.replace('/(tabs)/my-tickets');
-  
-    } catch (error) {
-      console.error('Login error:', error);
       setError(true);
+      return;
     }
-  };
-  
+
+    await AsyncStorage.setItem('authToken', result.token);
+    await AsyncStorage.setItem('userEmail', email);
+    router.replace('/(tabs)/my-tickets');
+
+  } catch (error) {
+    console.error('Login error:', error);
+    setError(true);
+  } finally {
+    setIsLoading(false); // סיים טעינה תמיד
+  }
+};
+
   
   
 
@@ -221,9 +223,16 @@ const signInWithApple = async () => {
                   <Text style={styles.forgotPasswordText}>Forgot password?</Text>
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity style={styles.continueButton} onPress={handleLogin}>
-                <Text style={styles.continueText}>Continue</Text>
+              <TouchableOpacity
+                style={[styles.continueButton, isLoading && { opacity: 0.6 }]}
+                onPress={handleLogin}
+                disabled={isLoading}
+              >
+                <Text style={styles.continueText}>
+                  {isLoading ? 'Checking credentials...' : 'Continue'}
+                </Text>
               </TouchableOpacity>
+
 
               <View style={styles.orContainer}>
                 <View style={styles.line} />
@@ -251,7 +260,7 @@ const signInWithApple = async () => {
           ) : (
             <>
               <Text style={styles.title}>Create an Account</Text>
-              <Text style={styles.subtitle}>Join us and enjoy a seamless experience! 🎉</Text>
+              <Text style={styles.subtitle}>Join and enjoy a seamless experience! 🎉</Text>
 
               <Text style={styles.label}>Full Name</Text>
               <TextInput

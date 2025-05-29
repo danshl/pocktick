@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#1D2B64',
     marginBottom: 4,
   },
   errorText: {
