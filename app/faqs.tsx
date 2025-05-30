@@ -31,9 +31,9 @@ export default function FaqsScreen() {
       <Text style={styles.title}>FAQs</Text>
 
       <View style={styles.faqItem}>
-        <Text style={styles.question}>What is Ticket Exchange?</Text>
+        <Text style={styles.question}>What is PockTick?</Text>
         <Text style={styles.answer}>
-          Ticket Exchange is a secure platform to manage and transfer event tickets.
+          PockTick is a secure platform to manage and transfer event tickets.
         </Text>
       </View>
 
@@ -67,7 +67,7 @@ export default function FaqsScreen() {
 
       <Text style={styles.contact}>
         For any further questions, feel free to reach us at{' '}
-        <Text style={styles.email}>example@example.com</Text>
+        <Text style={styles.email}>support@pocktick.com</Text>
       </Text>
     </ScrollView>
   );

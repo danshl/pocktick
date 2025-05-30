@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,13 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 
-const LOCAL_AVATAR_PATH = `${FileSystem.documentDirectory}user-avatar.png`;
+const DEFAULT_AVATAR = require('../assets/icons/user.png');
 
 export default function UserProfileScreen() {
   const router = useRouter();
@@ -23,37 +23,122 @@ export default function UserProfileScreen() {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [createdAt, setCreatedAt] = useState('');
-  const [originalAvatarUri, setOriginalAvatarUri] = useState<string | null>(null); // שמור את מה שהיה
-  const [tempAvatarUri, setTempAvatarUri] = useState<string | null>(null); // עריכה זמנית
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      const userEmail = await AsyncStorage.getItem('userEmail');
-      if (!userEmail) return;
-
-      const res = await fetch(`https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/profile/${userEmail}`);
-      const data = await res.json();
-
-      setFullName(data.fullName);
-      setEmail(data.email);
-      setPhoneNumber(data.phoneNumber);
-      setCreatedAt(data.createdAt);
-
-      const fileInfo = await FileSystem.getInfoAsync(LOCAL_AVATAR_PATH);
-      
-      if (fileInfo.exists) {
-        setOriginalAvatarUri(fileInfo.uri);
-        setTempAvatarUri(fileInfo.uri);
-      }
-    };
-
-    loadProfile();
-  }, []);
-
-  const handleBack = () => {
-    setTempAvatarUri(originalAvatarUri); // מבטל שינויים
-    router.back();
+  const isImageAvailable = async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      return response.ok;
+    } catch {
+      return false;
+    }
   };
+
+  const fetchAvatarUri = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) return;
+
+      const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/avatar-url', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) return;
+
+      const { avatarUrl } = await res.json();
+      if (avatarUrl && await isImageAvailable(avatarUrl)) {
+        setAvatarUri(`${avatarUrl}?t=${Date.now()}`);
+      } else {
+        setAvatarUri(null);
+      }
+    } catch {
+      setAvatarUri(null);
+    }
+  };
+
+  const fetchProfile = async () => {
+    const token = await AsyncStorage.getItem('authToken');
+    const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/profile', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await res.json();
+    setFullName(data.fullName);
+    setEmail(data.email);
+    setPhoneNumber(data.phoneNumber);
+    setCreatedAt(data.createdAt);
+  };
+
+  const handleImagePick = async () => {
+    Alert.alert('Upload Avatar', 'Choose an option', [
+      {
+        text: 'Camera',
+        onPress: async () => {
+          const permission = await ImagePicker.requestCameraPermissionsAsync();
+          if (!permission.granted) return;
+
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.7,
+          });
+
+          if (!result.canceled && result.assets.length > 0) {
+            uploadImage(result.assets[0].uri);
+          }
+        },
+      },
+      {
+        text: 'Gallery',
+        onPress: async () => {
+          const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!permission.granted) return;
+
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.7,
+          });
+
+          if (!result.canceled && result.assets.length > 0) {
+            uploadImage(result.assets[0].uri);
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const uploadImage = async (imageUri: string) => {
+    const token = await AsyncStorage.getItem('authToken');
+    const formData = new FormData();
+    formData.append('file', {
+      uri: imageUri,
+      name: 'avatar.png',
+      type: 'image/png',
+    } as any);
+
+    const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/upload-avatar', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      Alert.alert('Upload Failed', 'Could not upload image');
+      return;
+    }
+
+    fetchAvatarUri(); // עדכון מיידי מהשרת
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const load = async () => {
+        await fetchProfile();
+        await fetchAvatarUri();
+      };
+      load();
+    }, [])
+  );
 
   const handleSave = async () => {
     const token = await AsyncStorage.getItem('authToken');
@@ -72,93 +157,13 @@ export default function UserProfileScreen() {
       return;
     }
 
-    // אם התמונה שונתה – שמור לוקאלית ושלח לשרת
-    if (tempAvatarUri && tempAvatarUri !== originalAvatarUri) {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: tempAvatarUri,
-        name: 'avatar.png',
-        type: 'image/png',
-      } as any);      
-
-      const uploadResponse = await fetch("https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/upload-avatar", {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        Alert.alert("Upload failed", "Failed to upload avatar");
-        return;
-      }
-
-      // מחק ושמור לוקאלית
-      const existing = await FileSystem.getInfoAsync(LOCAL_AVATAR_PATH);
-
-      if (existing.exists) {
-        await FileSystem.deleteAsync(LOCAL_AVATAR_PATH);
-      }
-      await FileSystem.copyAsync({ from: tempAvatarUri, to: LOCAL_AVATAR_PATH });
-      setOriginalAvatarUri(LOCAL_AVATAR_PATH); // עדכן את מה שנשמר
-    }
-
     Alert.alert('Success', 'Profile updated successfully!');
     await AsyncStorage.setItem('userEmail', email);
   };
 
-  const handleSelectImage = async () => {
-    Alert.alert(
-      'Upload Avatar',
-      'Choose an option',
-      [
-        {
-          text: 'Camera',
-          onPress: async () => {
-            const permission = await ImagePicker.requestCameraPermissionsAsync();
-            if (!permission.granted) {
-              Alert.alert('Permission denied', 'We need access to your camera.');
-              return;
-            }
-
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              quality: 0.7,
-            });
-
-            if (!result.canceled && result.assets.length > 0) {
-              setTempAvatarUri(result.assets[0].uri); // מיידית תציג
-            }
-          },
-        },
-        {
-          text: 'Gallery',
-          onPress: async () => {
-            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (!permission.granted) {
-              Alert.alert('Permission denied', 'We need access to your gallery.');
-              return;
-            }
-
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              quality: 0.7,
-            });
-
-            if (!result.canceled && result.assets.length > 0) {
-              setTempAvatarUri(result.assets[0].uri);
-            }
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
-  };
-
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <View style={styles.backCircle}>
           <Image source={{ uri: 'https://tickectexchange.blob.core.windows.net/ui-assets/back-arrow.png' }} style={styles.backIcon} />
         </View>
@@ -167,8 +172,8 @@ export default function UserProfileScreen() {
       <Text style={styles.title}>User Profile</Text>
 
       <View style={styles.avatarContainer}>
-        <Image source={tempAvatarUri ? { uri: tempAvatarUri } : require('../assets/icons/user.png')} style={styles.avatar} />
-        <TouchableOpacity style={styles.cameraIcon} onPress={handleSelectImage}>
+        <Image source={avatarUri ? { uri: avatarUri } : DEFAULT_AVATAR} style={styles.avatar} />
+        <TouchableOpacity style={styles.cameraIcon} onPress={handleImagePick}>
           <Feather name="camera" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -190,7 +195,6 @@ export default function UserProfileScreen() {
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

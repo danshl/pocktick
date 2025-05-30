@@ -44,13 +44,16 @@ export default function MyTicketsScreen() {
   const fetchTickets = async () => {
     try {
       const email = await AsyncStorage.getItem('userEmail');
+      const token = await AsyncStorage.getItem('authToken');
+      console.log("sdd");
+      console.log(token);
       if (!email) {
         setError('User email not found.');
         setLoading(false);
         return;
       }
       const response = await fetch(
-        `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/tickets/user/${email}`
+        `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/tickets/user-tickets?token=${token}`
       );
       if (!response.ok) throw new Error('Failed to fetch tickets.');
       const data = await response.json();

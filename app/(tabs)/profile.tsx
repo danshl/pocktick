@@ -11,10 +11,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
 import { useFocusEffect } from '@react-navigation/native';
-
-const LOCAL_AVATAR_PATH = `${FileSystem.documentDirectory}user-avatar.png`;
 
 type UserProfile = {
   fullName: string;
@@ -31,22 +28,17 @@ export default function SettingsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState(true);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [hasAvatar, setHasAvatar] = useState(false);
+
   const fetchUserProfile = async () => {
     try {
-      const email = await AsyncStorage.getItem('userEmail');
-      if (!email) {
-        setError('User email not found.');
-        setLoading(false);
-        return;
-      }
-  
-      const response = await fetch(
-        `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/profile/${email}`
-      );
-  
-      if (!response.ok) throw new Error('Failed to fetch profile.');
-  
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) throw new Error('No auth token found');
+
+      const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch profile');
       const data = await response.json();
       setProfile(data);
     } catch (err) {
@@ -56,79 +48,72 @@ export default function SettingsScreen() {
       setLoading(false);
     }
   };
-  
 
-  const refreshAvatar = async () => {
-    await FileSystem.deleteAsync(LOCAL_AVATAR_PATH, { idempotent: true });
-  
-    const localImage = await FileSystem.getInfoAsync(LOCAL_AVATAR_PATH);
-    if (localImage.exists && localImage.size > 1000) {
-      console.log('Loaded avatar from local storage.');
-      setAvatarUri(`${localImage.uri}?t=${Date.now()}`);
-      setHasAvatar(true);
-      return;
-    }
-  
-    const token = await AsyncStorage.getItem('authToken');
-    if (!token) {
-      setHasAvatar(false);
-      return;
-    }
-  
+  const isImageAvailable = async (url: string): Promise<boolean> => {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const userId = payload.sub;
-      const blobUrl = `https://tickectexchange.blob.core.windows.net/user-avatars/${userId}.png`;
-  
-      const result = await FileSystem.downloadAsync(blobUrl, LOCAL_AVATAR_PATH);
-      const downloadedImage = await FileSystem.getInfoAsync(LOCAL_AVATAR_PATH);
-  
-      if (downloadedImage.exists && downloadedImage.size > 1000) {
-        console.log('Downloaded avatar from blob storage.');
-        setAvatarUri(`${LOCAL_AVATAR_PATH}?t=${Date.now()}`);
-        setHasAvatar(true);
-      } else {
-        console.log('No avatar found. Using default.');
-        await FileSystem.deleteAsync(LOCAL_AVATAR_PATH, { idempotent: true });
-        setAvatarUri(null);
-        setHasAvatar(false);
-      }
-    } catch (err) {
-      console.warn('Failed to fetch avatar from blob:', err);
-      setAvatarUri(null);
-      setHasAvatar(false);
+      const response = await fetch(url, { method: 'HEAD' });
+      return response.ok;
+    } catch (error) {
+      console.warn('HEAD request failed:', error);
+      return false;
     }
   };
-  
-  
+
+  const fetchAvatarUri = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        setAvatarUri(null);
+        return;
+      }
+
+      const response = await fetch(
+        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/avatar-url',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        setAvatarUri(null);
+        return;
+      }
+
+      const { avatarUrl } = await response.json();
+
+      if (
+        avatarUrl &&
+        typeof avatarUrl === 'string' &&
+        avatarUrl.startsWith('http') &&
+        await isImageAvailable(avatarUrl)
+      ) {
+        setAvatarUri(`${avatarUrl}?t=${Date.now()}`);
+      } else {
+        setAvatarUri(null);
+      }
+
+    } catch (err) {
+      console.warn('Failed to fetch avatar URL:', err);
+      setAvatarUri(null);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
       const load = async () => {
         setLoading(true);
         await fetchUserProfile();
-        await refreshAvatar();
+        await fetchAvatarUri();
       };
       load();
     }, [])
   );
 
   const handleLogout = async () => {
-    try {
-      const fileInfo = await FileSystem.getInfoAsync(LOCAL_AVATAR_PATH);
-      if (fileInfo.exists) {
-        await FileSystem.deleteAsync(LOCAL_AVATAR_PATH);
-        console.log('Deleted avatar from local storage.');
-      }
-    } catch (error) {
-      console.warn('Error while deleting local avatar:', error);
-    }
-  
     await AsyncStorage.removeItem('authToken');
     await AsyncStorage.removeItem('userEmail');
     router.replace('/login');
   };
-  
 
   if (loading) {
     return <ActivityIndicator size="large" color="#5787E2" style={styles.loader} />;
@@ -141,16 +126,16 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
-      <View style={styles.profileHeader}>
-      <Image
-  source={
-    hasAvatar && avatarUri
-      ? { uri: avatarUri }
-      : require('../../assets/icons/user.png')
-  }
-  style={styles.avatar}
-/>
 
+      <View style={styles.profileHeader}>
+        <Image
+          source={
+            avatarUri
+              ? { uri: avatarUri }
+              : require('../../assets/icons/user.png')
+          }
+          style={styles.avatar}
+        />
         <View>
           <Text style={styles.welcomeText}>Welcome</Text>
           <Text style={styles.profileName}>{profile.fullName}</Text>
@@ -256,10 +241,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 12,
     color: '#333',
-  },
-  logoutButton: {
-    marginTop: 30,
-    backgroundColor: '#fff',
   },
   errorText: {
     color: 'red',
