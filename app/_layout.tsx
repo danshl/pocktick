@@ -7,10 +7,11 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { UserDataProvider } from '../app/useUserData'; // ודא שהנתיב נכון
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
-console.log("✅ Reached layout screen");
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
@@ -23,28 +24,30 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
+  if (!loaded) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="ForgotPasswordScreen" options={{ headerShown: false }} />
-        <Stack.Screen name="change-password" options={{ headerShown: false }} />
-        <Stack.Screen name="faqs" options={{ headerShown: false }} />
-        <Stack.Screen name="user-profile" options={{ headerShown: false }} />
-        <Stack.Screen name="ticket-details" options={{ headerShown: false }} />
-        <Stack.Screen name="VerifyCodeScreen" options={{ headerShown: false }} />
-        <Stack.Screen name="VerifyEmailScreen" options={{ headerShown: false }} />
-        <Stack.Screen name="SetNewPasswordScreen" options={{ headerShown: false }} />
-        <Stack.Screen name="GoogleSignIn" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <UserDataProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="initial-loader" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="load-screen" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="ForgotPasswordScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="change-password" options={{ headerShown: false }} />
+          <Stack.Screen name="faqs" options={{ headerShown: false }} />
+          <Stack.Screen name="user-profile" options={{ headerShown: false }} />
+          <Stack.Screen name="ticket-details" options={{ headerShown: false }} />
+          <Stack.Screen name="VerifyCodeScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="VerifyEmailScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="SetNewPasswordScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="GoogleSignIn" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </UserDataProvider>
   );
 }

@@ -55,6 +55,30 @@ export default function TicketDetailsScreen() {
     }).start(() => setFlipped(!flipped));
   };
 
+const handleCancelOffer = async () => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    const response = await fetch(`https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/tickets/cancel-offer/${selectedTicket.id}?token=${token}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to cancel offer');
+    }
+
+    Alert.alert('Success', 'The offer has been canceled.');
+
+    // רענון הכרטיסים (רק אם יש לך את הפונקציה או דרך לעדכן את הרשימה)
+    //await refreshTickets?.(); // או fetchTickets / setTickets
+  } catch (error) {
+    console.error('Error cancelling offer:', error);
+    Alert.alert('Error', 'Something went wrong while cancelling the offer.');
+  }
+};
+
   const handleBuy = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
@@ -225,15 +249,17 @@ export default function TicketDetailsScreen() {
             </>
           ))}
 
-          {selectedTicket.status === 1 && (selectedTicket.transferSource === null ? (
-            <TouchableOpacity style={styles.cancelButton} onPress={handleBuy}>
+        {selectedTicket.status === 1 && (
+          selectedTicket.transferSource === null ? (
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancelOffer}>
               <Text style={styles.cancelButtonText}>Cancel Offer</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.confirmButton} onPress={handleBuy}>
               <Text style={styles.confirmButtonText}>Buy</Text>
             </TouchableOpacity>
-          ))}
+          )
+        )}
         </View>
       </ScrollView>
     </SafeAreaView>

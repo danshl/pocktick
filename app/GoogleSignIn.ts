@@ -45,7 +45,7 @@ export default function useGoogleLogin() {
         await AsyncStorage.setItem('userEmail', result.email);
 
         Alert.alert('התחברת בהצלחה', `ברוך הבא, ${result.name || 'משתמש'}`);
-        router.replace('/(tabs)/my-tickets');
+        router.replace('/load-screen');
       }
     } catch (error: any) {
       let errorMsg = 'שגיאה לא ידועה התרחשה';

@@ -14,7 +14,7 @@ export default function AuthCheck() {
       if (token) {
         router.replace('/(tabs)/my-tickets');
       } else {
-        router.replace('/login');
+        router.replace('/initial-loader');
       }
     };
 

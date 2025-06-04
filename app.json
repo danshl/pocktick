@@ -1,18 +1,21 @@
 {
   "expo": {
-    "name": "pocktick",
+    "name": "PockTick",
     "slug": "pocktick",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/square_logo.png",                      
     "scheme": "pocktick",
     "userInterfaceStyle": "automatic",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "platforms": ["ios", "android", "web"],
     "newArchEnabled": false,
+
+    "splash": {
+      "image": "./assets/images/square_logo.png",         
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pocktick.app",
@@ -22,42 +25,33 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
+
     "android": {
       "package": "com.pocktick.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/square_logo.png",
         "backgroundColor": "#ffffff"
       }
     },
+
     "web": {
-      "bundler": "metro",
-      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+      "expo-splash-screen"                                 
     ],
-    "experiments": {
-      "typedRoutes": true
-    },
+
     "extra": {
       "eas": {
         "projectId": "9169a496-49b2-40b9-8fba-246da66a622c"
       },
       "router": {}
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+
+    "assetBundlePatterns": ["**/*"],
     "entryPoint": "./index.js",
     "owner": "danshl"
   }

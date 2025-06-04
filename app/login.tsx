@@ -63,7 +63,7 @@ const signInWithApple = async () => {
 
     await AsyncStorage.setItem('authToken', result.token);
     await AsyncStorage.setItem('userEmail', result.email);
-    router.replace('/(tabs)/my-tickets');
+    router.replace('/load-screen');
   } catch (e: any) {
     if (e.code === 'ERR_REQUEST_CANCELED') {
       console.log('ביטול', 'המשתמש ביטל את ההתחברות עם Apple');
@@ -128,7 +128,8 @@ const handleLogin = async () => {
 
     await AsyncStorage.setItem('authToken', result.token);
     await AsyncStorage.setItem('userEmail', email);
-    router.replace('/(tabs)/my-tickets');
+    console.log("s'");
+    router.replace('/load-screen');
 
   } catch (error) {
     console.error('Login error:', error);

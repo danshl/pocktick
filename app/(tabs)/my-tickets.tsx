@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   FlatList,
-  ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
   Image,
+  Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { StatusBar, Platform } from 'react-native';
+import { useUserData } from '../useUserData';
+import { fetchTickets } from '../ticketService'; // ודא שזה הנתיב הנכון
+
+
+
 
 export type Ticket = {
   id: number;
@@ -34,48 +37,26 @@ const statusLabels = ['Active', 'Pending', 'Transferred', 'Used'] as const;
 const statusColors = ['#4CAF50', '#FFA726', '#9E9E9E', '#607D8B'];
 
 export default function MyTicketsScreen() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { tickets, setTickets } = useUserData();
   const [selectedStatus, setSelectedStatus] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
-  const fetchTickets = async () => {
-    try {
-      const email = await AsyncStorage.getItem('userEmail');
-      const token = await AsyncStorage.getItem('authToken');
-      console.log("sdd");
-      console.log(token);
-      if (!email) {
-        setError('User email not found.');
-        setLoading(false);
-        return;
-      }
-      const response = await fetch(
-        `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/tickets/user-tickets?token=${token}`
-      );
-      if (!response.ok) throw new Error('Failed to fetch tickets.');
-      const data = await response.json();
-      console.log(data);
-      setTickets(data);
-    } catch (err) {
-      console.error('❌ Error fetching tickets:', err);
-      setError('Something went wrong.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTickets();
-  }, []);
-
-  const onRefresh = () => {
+  const refreshTickets = async () => {
+  try {
     setRefreshing(true);
-    fetchTickets();
-  };
+    const updatedTickets = await fetchTickets();
+    setTickets(updatedTickets);
+  } catch (err) {
+    console.error('Failed to refresh tickets', err);
+  } finally {
+    setRefreshing(false);
+  }
+};
+
+const filteredTickets = tickets.filter(
+  (ticket) => Number(ticket.status) === selectedStatus
+);
 
   const renderTicket = ({ item }: { item: Ticket }) => (
     <TouchableOpacity
@@ -133,10 +114,6 @@ export default function MyTicketsScreen() {
     </TouchableOpacity>
   );
 
-  const filteredTickets = tickets.filter(
-    (ticket) => ticket.status === selectedStatus
-  );
-
   return (
     <View style={styles.container}>
       <View style={styles.tabBar}>
@@ -161,11 +138,7 @@ export default function MyTicketsScreen() {
         ))}
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#5787E2" />
-      ) : error ? (
-        <Text style={styles.errorText}>{error}</Text>
-      ) : filteredTickets.length === 0 ? (
+      {filteredTickets.length === 0 ? (
         <Text style={styles.emptyText}>
           No {statusLabels[selectedStatus]} tickets found.
         </Text>
@@ -175,21 +148,27 @@ export default function MyTicketsScreen() {
           renderItem={renderTicket}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{ paddingBottom: 100 }}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
         />
       )}
+              <TouchableOpacity style={styles.refreshButton} onPress={refreshTickets}>
+        <Text style={styles.refreshText}>
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-    top: Platform.OS === 'android' ? -30 : 0,
-  },
+container: {
+  flex: 1,
+  backgroundColor: '#fff',
+  padding: 20,
+  paddingBottom: 100,
+  position: 'relative', // חשוב!
+  top: Platform.OS === 'android' ? -30 : 0,
+},
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -286,15 +265,32 @@ const styles = StyleSheet.create({
     color: '#1D2B64',
     marginBottom: 4,
   },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 20,
-  },
   emptyText: {
     textAlign: 'center',
     color: '#888',
     marginTop: 40,
     fontSize: 16,
   },
+refreshButton: {
+  position: 'absolute',
+  bottom: 100, // גובה בטוח מעל טאב בר
+  right: 24,
+  backgroundColor: '#1D2B64',
+  paddingHorizontal: 18,
+  paddingVertical: 10,
+  borderRadius: 30,
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 100,
+  elevation: 6,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+},
+refreshText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 14,
+},
 });
