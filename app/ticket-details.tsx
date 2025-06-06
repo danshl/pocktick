@@ -22,6 +22,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUserData } from './useUserData';
+import { fetchTickets } from './ticketService';
 
 export default function TicketDetailsScreen() {
   const router = useRouter();
@@ -32,6 +34,7 @@ export default function TicketDetailsScreen() {
   const [price, setPrice] = useState('');
   const [comments, setComments] = useState('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { tickets, setTickets } = useUserData();
 
   useEffect(() => {
     AsyncStorage.getItem('userEmail').then(setUserEmail);
@@ -70,7 +73,10 @@ const handleCancelOffer = async () => {
     }
 
     Alert.alert('Success', 'The offer has been canceled.');
+    const updated = await fetchTickets(); // תוודא שזמינה
+    setTickets(updated); // כך תעדכן בכל האפליקציה
 
+    router.back();
     // רענון הכרטיסים (רק אם יש לך את הפונקציה או דרך לעדכן את הרשימה)
     //await refreshTickets?.(); // או fetchTickets / setTickets
   } catch (error) {
@@ -93,9 +99,12 @@ const handleCancelOffer = async () => {
 
       const responseText = await response.text();
       if (response.ok) {
+        const updatedTickets = await fetchTickets();
+        setTickets(updatedTickets); 
         Alert.alert('Success', 'Ticket successfully purchased.', [
           { text: 'OK', onPress: () => router.back() }
         ]);
+
       } else {
         try {
           const json = JSON.parse(responseText);
@@ -134,6 +143,8 @@ const handleCancelOffer = async () => {
       let message = 'Transfer failed.';
 
       if (response.ok) {
+        const updatedTickets = await fetchTickets();
+        setTickets(updatedTickets); 
         Alert.alert('Success', 'Transfer initiated successfully.', [
           { text: 'OK', onPress: () => router.back() },
         ]);

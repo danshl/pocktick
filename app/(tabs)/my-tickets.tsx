@@ -12,7 +12,8 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useUserData } from '../useUserData';
 import { fetchTickets } from '../ticketService'; // ודא שזה הנתיב הנכון
-
+import { Animated, Easing } from 'react-native';
+import { useRef, useEffect } from 'react';
 
 
 
@@ -42,17 +43,38 @@ export default function MyTicketsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  const startRotation = () => {
+    rotateAnim.setValue(0);
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  };
+
+  const stopRotation = () => {
+    rotateAnim.stopAnimation();
+    rotateAnim.setValue(0);
+  };
+
   const refreshTickets = async () => {
-  try {
-    setRefreshing(true);
-    const updatedTickets = await fetchTickets();
-    setTickets(updatedTickets);
-  } catch (err) {
-    console.error('Failed to refresh tickets', err);
-  } finally {
-    setRefreshing(false);
-  }
-};
+    try {
+      setRefreshing(true);
+      startRotation(); // התחלת סיבוב
+      const updatedTickets = await fetchTickets();
+      setTickets(updatedTickets);
+    } catch (err) {
+      console.error('Failed to refresh tickets', err);
+    } finally {
+      stopRotation(); // עצירת סיבוב
+      setRefreshing(false);
+    }
+  };
 
 const filteredTickets = tickets.filter(
   (ticket) => Number(ticket.status) === selectedStatus
@@ -150,11 +172,22 @@ const filteredTickets = tickets.filter(
           contentContainerStyle={{ paddingBottom: 100 }}
         />
       )}
-              <TouchableOpacity style={styles.refreshButton} onPress={refreshTickets}>
-        <Text style={styles.refreshText}>
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </Text>
-      </TouchableOpacity>
+<TouchableOpacity style={styles.refreshButton} onPress={refreshTickets}>
+<Animated.Image
+  source={require('../../assets/images/refresh.png')}
+  style={[
+    styles.refreshIcon,
+    {
+      transform: [{
+        rotate: rotateAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '360deg'],
+        }),
+      }],
+    }
+  ]}
+/>
+</TouchableOpacity>
     </View>
   );
 }
@@ -273,12 +306,12 @@ container: {
   },
 refreshButton: {
   position: 'absolute',
-  bottom: 100, // גובה בטוח מעל טאב בר
+  bottom: 100,
   right: 24,
   backgroundColor: '#1D2B64',
-  paddingHorizontal: 18,
-  paddingVertical: 10,
-  borderRadius: 30,
+  width: 56,
+  height: 56,
+  borderRadius: 28,
   justifyContent: 'center',
   alignItems: 'center',
   zIndex: 100,
@@ -287,6 +320,11 @@ refreshButton: {
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.25,
   shadowRadius: 3.84,
+},
+refreshIcon: {
+  width: 28,
+  height: 28,
+  tintColor: '#fff',
 },
 refreshText: {
   color: '#fff',
