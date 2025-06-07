@@ -37,14 +37,14 @@ export default function useGoogleLogin() {
         const result = await apiResponse.json();
 
         if (!apiResponse.ok) {
-          Alert.alert('שגיאה בהתחברות', result.message || 'השרת דחה את ההתחברות');
+          Alert.alert('Error', result.message || 'Please try again later');
           return;
         }
 
         await AsyncStorage.setItem('authToken', result.token);
         await AsyncStorage.setItem('userEmail', result.email);
+        Alert.alert('Login Successful', `Welcome, ${result.name || 'User'}`);
 
-        Alert.alert('התחברת בהצלחה', `ברוך הבא, ${result.name || 'משתמש'}`);
         router.replace('/load-screen');
       }
     } catch (error: any) {
@@ -58,7 +58,6 @@ export default function useGoogleLogin() {
         errorMsg = 'Google Play Services לא זמינים';
       }
 
-      Alert.alert('שגיאה בהתחברות', errorMsg);
       Alert.alert('Google Sign-In Error:', error);
     }
   };

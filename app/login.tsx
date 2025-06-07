@@ -38,7 +38,7 @@ const signInWithApple = async () => {
     const fullName = "Israel israeli"; 
 
     if (!token) {
-      Alert.alert('שגיאה', 'לא התקבל טוקן מ־Apple');
+    Alert.alert('Error', 'No token was received from Apple');
       return;
     }
     console.log(token,fullName);
@@ -57,7 +57,7 @@ const signInWithApple = async () => {
     const result = await response.json();
 
     if (!response.ok) {
-      Alert.alert('שגיאה בהתחברות', result.message || 'התחברות נכשלה');
+      Alert.alert('Error', result.message || 'Please try again later');
       return;
     }
 
@@ -66,13 +66,13 @@ const signInWithApple = async () => {
     router.replace('/load-screen');
   } catch (e: any) {
     if (e.code === 'ERR_REQUEST_CANCELED') {
-      console.log('ביטול', 'המשתמש ביטל את ההתחברות עם Apple');
+      console.log('Canceled', 'The user canceled the sign-in with Apple');
     } else {
-      Alert.alert('שגיאה בהתחברות', e.message || 'שגיאה לא צפויה');
+      Alert.alert('Sign-In Error', e.message || 'An unexpected error occurred');
       console.error('Apple Sign-In Error:', e);
     }
   }
-};
+  };
 
   
 const handleLogin = async () => {
