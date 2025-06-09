@@ -367,13 +367,11 @@ const styles = StyleSheet.create({
     width: '90%',
     backgroundColor: '#fff',
     borderRadius: 10,
-    alignItems: 'center',
   },
   label: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
-    alignSelf: 'flex-start',
   },
   input: {
     borderWidth: 1,
@@ -420,7 +418,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 30,
-    width: '60%',
+    width: '100%',
   },
   line: {
     flex: 1,
@@ -431,6 +429,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     fontSize: 14,
     color: '#888',
+    alignItems: 'center',
   },
   socialButton: {
     width: '100%',

@@ -24,6 +24,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserData } from './useUserData';
 import { fetchTickets } from './ticketService';
+import { ActivityIndicator } from 'react-native';
 
 export default function TicketDetailsScreen() {
   const router = useRouter();
@@ -35,7 +36,8 @@ export default function TicketDetailsScreen() {
   const [comments, setComments] = useState('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const { tickets, setTickets } = useUserData();
-
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
   useEffect(() => {
     AsyncStorage.getItem('userEmail').then(setUserEmail);
   }, []);
@@ -57,6 +59,32 @@ export default function TicketDetailsScreen() {
       useNativeDriver: true,
     }).start(() => setFlipped(!flipped));
   };
+
+  const fetchQrUrl = async () => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    const response = await fetch(
+      `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/tickets/${selectedTicket.id}/qr`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      setQrUrl(data.url);
+      setQrModalVisible(true);
+    } else {
+      Alert.alert('Error', 'QR code not available.');
+    }
+  } catch (error) {
+    console.error('QR Fetch Error:', error);
+    Alert.alert('Error', 'Failed to fetch QR code.');
+  }
+};
 
 const handleCancelOffer = async () => {
   try {
@@ -245,7 +273,7 @@ const handleCancelOffer = async () => {
               <TouchableOpacity style={styles.transferButton} onPress={flipCard}>
                 <Text style={styles.transferButtonText}>Transfer Ticket</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.qrButton}>
+              <TouchableOpacity style={styles.qrButton} onPress={fetchQrUrl}>
                 <Text style={styles.qrButtonText}>View QR</Text>
               </TouchableOpacity>
             </>
@@ -273,6 +301,44 @@ const handleCancelOffer = async () => {
         )}
         </View>
       </ScrollView>
+{qrModalVisible && (
+  <View style={styles.modalOverlay}>
+    <View style={styles.qrModal}>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => setQrModalVisible(false)}
+      >
+        <Text style={styles.closeButtonText}>×</Text>
+      </TouchableOpacity>
+
+      <View style={styles.qrCardBlue}>
+        {/* Logo at the top of the blue box */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../assets/images/name_white.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* QR Code inside white box */}
+        <View style={styles.qrWhiteBox}>
+          {qrUrl ? (
+            <Image
+              source={{ uri: qrUrl }}
+              style={styles.qrImageSmaller}
+              resizeMode="contain"
+            />
+          ) : (
+            <ActivityIndicator size="large" color="#1D2B64" />
+          )}
+        </View>
+
+      <Text style={styles.qrTextWhite}>Show this code at event entry</Text>
+      </View>
+    </View>
+  </View>
+)}
     </SafeAreaView>
   );
 }
@@ -322,6 +388,98 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  
-  
+  modalOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 999,
+},
+
+qrModal: {
+  backgroundColor: '#fff',
+  padding: 20,
+  borderRadius: 12,
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 250,
+  elevation: 10,
+},
+
+closeButton: {
+  position: 'absolute',
+  top: 5,
+  right: 10,
+  zIndex: 10,
+},
+
+closeButtonText: {
+  fontSize: 24,
+  color: '#333',
+},
+  qrCard: {
+  backgroundColor: '#1D2B64',
+  borderRadius: 20,
+  padding: 24,
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 320,
+  alignSelf: 'center',
+  marginTop: 40,
+},
+
+qrImage: {
+  width: 260,
+  height: 260,
+  marginBottom: 20,
+},
+
+qrText: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: '600',
+  textAlign: 'center',
+},
+qrCardBlue: {
+  backgroundColor: '#1D2B64',
+  borderRadius: 20,
+  padding: 24,
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 320,
+  alignSelf: 'center',
+  marginTop: 40,
+},
+
+qrWhiteBox: {
+  backgroundColor: '#fff',
+  padding: 20,
+  borderRadius: 16,
+  marginBottom: 16,
+},
+
+qrImageSmaller: {
+  width: 220,
+  height: 220,
+},
+
+qrTextWhite: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: '600',
+  textAlign: 'center',
+},
+logoContainer: {
+  marginBottom: 12,
+  alignItems: 'center',
+},
+
+logoImage: {
+  width: 100,
+  height: 30,
+},
 });
