@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   Image,
   Switch,
+  Alert,
+  TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -29,6 +31,9 @@ export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const fetchUserProfile = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
@@ -48,6 +53,40 @@ export default function SettingsScreen() {
       setLoading(false);
     }
   };
+
+const handleConfirmDelete = async (code: string) => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+
+    const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/confirm-delete', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    });
+
+    if (!response.ok) {
+      // קרא את התגובה רק פעם אחת
+      let message = 'Failed to delete account.';
+      try {
+        const error = await response.json();
+        message = error?.message || message;
+      } catch (e) {
+        console.warn('Could not parse error response');
+      }
+      Alert.alert('Error', message);
+      return;
+    }
+
+    await AsyncStorage.clear();
+    router.replace('/login');
+  } catch (error) {
+    console.error('Error confirming account deletion:', error);
+    Alert.alert('Error', 'Something went wrong.');
+  }
+};
 
   const isImageAvailable = async (url: string): Promise<boolean> => {
     try {
@@ -123,59 +162,134 @@ export default function SettingsScreen() {
     return <Text style={styles.errorText}>{error || "Failed to load profile."}</Text>;
   }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
+return (
+  <View style={styles.container}>
+    <Text style={styles.title}>Settings</Text>
 
-      <View style={styles.profileHeader}>
-        <Image
-          source={
-            avatarUri
-              ? { uri: avatarUri }
-              : require('../../assets/icons/user.png')
-          }
-          style={styles.avatar}
-        />
-        <View>
-          <Text style={styles.welcomeText}>Welcome</Text>
-          <Text style={styles.profileName}>{profile.fullName}</Text>
-        </View>
-        <Feather name="log-out" size={24} color="#FF3B30" style={styles.logoutIcon} onPress={handleLogout} />
+    <View style={styles.profileHeader}>
+      <Image
+        source={
+          avatarUri
+            ? { uri: avatarUri }
+            : require('../../assets/icons/user.png')
+        }
+        style={styles.avatar}
+      />
+      <View>
+        <Text style={styles.welcomeText}>Welcome</Text>
+        <Text style={styles.profileName}>{profile.fullName}</Text>
       </View>
-
-      <TouchableOpacity style={styles.settingItem} onPress={() => router.push('../user-profile')}>
-        <View style={styles.settingRow}>
-          <Ionicons name="person-outline" size={24} color="#333" />
-          <Text style={styles.settingText}>User Profile</Text>
-        </View>
-        <Feather name="chevron-right" size={20} color="#888" />
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/change-password')}>
-        <View style={styles.settingRow}>
-          <Feather name="lock" size={24} color="#333" />
-          <Text style={styles.settingText}>Change Password</Text>
-        </View>
-        <Feather name="chevron-right" size={20} color="#888" />
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/faqs')}>
-        <View style={styles.settingRow}>
-          <Feather name="help-circle" size={24} color="#333" />
-          <Text style={styles.settingText}>FAQs</Text>
-        </View>
-        <Feather name="chevron-right" size={20} color="#888" />
-      </TouchableOpacity>
-
-      <View style={styles.settingItem}>
-        <View style={styles.settingRow}>
-          <Feather name="bell" size={24} color="#333" />
-          <Text style={styles.settingText}>Push Notification</Text>
-        </View>
-        <Switch value={notifications} onValueChange={() => setNotifications(!notifications)} />
-      </View>
+      <Feather name="log-out" size={24} color="#FF3B30" style={styles.logoutIcon} onPress={handleLogout} />
     </View>
-  );
+
+    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('../user-profile')}>
+      <View style={styles.settingRow}>
+        <Ionicons name="person-outline" size={24} color="#333" />
+        <Text style={styles.settingText}>User Profile</Text>
+      </View>
+      <Feather name="chevron-right" size={20} color="#888" />
+    </TouchableOpacity>
+
+    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/change-password')}>
+      <View style={styles.settingRow}>
+        <Feather name="lock" size={24} color="#333" />
+        <Text style={styles.settingText}>Change Password</Text>
+      </View>
+      <Feather name="chevron-right" size={20} color="#888" />
+    </TouchableOpacity>
+
+    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/faqs')}>
+      <View style={styles.settingRow}>
+        <Feather name="help-circle" size={24} color="#333" />
+        <Text style={styles.settingText}>FAQs</Text>
+      </View>
+      <Feather name="chevron-right" size={20} color="#888" />
+    </TouchableOpacity>
+
+    <View style={styles.settingItem}>
+      <View style={styles.settingRow}>
+        <Feather name="bell" size={24} color="#333" />
+        <Text style={styles.settingText}>Push Notification</Text>
+      </View>
+      <Switch value={notifications} onValueChange={() => setNotifications(!notifications)} />
+    </View>
+
+<TouchableOpacity
+  style={styles.deleteButton}
+  onPress={async () => {
+    Alert.alert(
+      "Are you sure?",
+      "This will permanently delete your account.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Yes, Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('authToken');
+              const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/request-delete', {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              if (!response.ok) {
+                const error = await response.json();
+                Alert.alert("Error", error.message || "Failed to request deletion code.");
+                return;
+              }
+
+              Alert.alert("Code Sent", "A verification code was sent to your email.");
+              setShowDeleteModal(true);
+            } catch (err) {
+              console.error("Error requesting deletion code:", err);
+              Alert.alert("Error", "Something went wrong while requesting the code.");
+            }
+          },
+        }
+      ]
+    );
+  }}
+>
+  <View style={styles.deleteContent}>
+
+    <Text style={styles.deleteText}>Delete My Account</Text>
+  </View>
+</TouchableOpacity>
+
+    {/* 👇 זה המודל שמופיע אחרי אישור המחיקה */}
+    {showDeleteModal && (
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalBox}>
+      <Text style={styles.modalTitle}>Confirm Account Deletion</Text>
+      <Text style={styles.modalText}>Enter the code sent to your email</Text>
+      <TextInput
+        style={styles.input}
+        keyboardType="numeric"
+        value={password}
+        onChangeText={setPassword}
+        placeholder="Enter Code"
+        secureTextEntry={false}
+      />
+      <TouchableOpacity
+        style={styles.confirmDeleteBtn}
+        onPress={() => handleConfirmDelete(password)}
+      >
+        <Text style={styles.confirmDeleteText}>
+          {deleting ? 'Deleting...' : 'Confirm Deletion'}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
+        <Text style={styles.cancelModalText}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
+  </View>
+);
+  
 }
 
 const styles = StyleSheet.create({
@@ -250,4 +364,87 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 50,
   },
+modalOverlay: {
+  position: 'absolute',
+  top: 0, left: 0, right: 0, bottom: 0,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 10,
+},
+
+modalBox: {
+  width: '85%',
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  padding: 20,
+  alignItems: 'center',
+},
+
+modalTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  marginBottom: 10,
+},
+
+modalText: {
+  fontSize: 14,
+  marginBottom: 15,
+  textAlign: 'center',
+},
+
+confirmDeleteBtn: {
+  backgroundColor: '#FF3B30',
+  paddingVertical: 12,
+  paddingHorizontal: 30,
+  borderRadius: 8,
+  marginTop: 10,
+  width: '100%',
+  alignItems: 'center',
+},
+
+confirmDeleteText: {
+  color: '#fff',
+  fontWeight: 'bold',
+},
+
+cancelModalText: {
+  color: '#888',
+  marginTop: 15,
+  textDecorationLine: 'underline',
+},
+input: {
+  width: '100%',
+  height: 50,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  marginBottom: 15,
+  backgroundColor: '#fff',
+},
+deleteButton: {
+  backgroundColor: '#fff',
+  padding: 15,
+  borderRadius: 12,
+  marginTop: 30,
+  borderWidth: 1,
+  borderColor: '#FF3B30',
+  height: 60,
+  justifyContent: 'center',
+},
+
+deleteContent: {
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+  height: '100%',
+},
+
+deleteText: {
+  fontSize: 16,
+  color: '#FF3B30',
+  fontWeight: 'bold',
+  textAlign: 'center',
+},
 });

@@ -43,7 +43,6 @@ export default function useGoogleLogin() {
 
         await AsyncStorage.setItem('authToken', result.token);
         await AsyncStorage.setItem('userEmail', result.email);
-        Alert.alert('Login Successful', `Welcome, ${result.name || 'User'}`);
 
         router.replace('/load-screen');
       }

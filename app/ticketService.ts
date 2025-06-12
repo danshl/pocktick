@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export async function fetchTickets() {
   console.log("fetching tickets...")
   const token = await AsyncStorage.getItem('authToken');
+  console.log("s",token,"s")
   if (!token) throw new Error('No token found');
 
   const response = await fetch(

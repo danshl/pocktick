@@ -148,7 +148,7 @@ export default function UserProfileScreen() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ fullName, email, phoneNumber }),
+      body: JSON.stringify({ fullName, phoneNumber }),
     });
 
     const data = await res.json();
@@ -182,7 +182,11 @@ export default function UserProfileScreen() {
       <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
 
       <Text style={styles.label}>E-mail</Text>
-      <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
+      <TextInput
+        style={[styles.input, { backgroundColor: '#eee', color: '#666' }]}
+        value={email}
+        editable={false}
+      />
 
       <Text style={styles.label}>Phone</Text>
       <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />

@@ -14,25 +14,9 @@ import { useUserData } from '../useUserData';
 import { fetchTickets } from '../ticketService'; // ודא שזה הנתיב הנכון
 import { Animated, Easing } from 'react-native';
 import { useRef, useEffect } from 'react';
+import { Ticket } from '../types';
 
 
-
-export type Ticket = {
-  id: number;
-  price: number;
-  createdAt: string;
-  status: number;
-  event: {
-    id: number;
-    name: string;
-    date: string;
-    location: string;
-    startTime: string;
-    gatesOpenTime: string;
-    notes?: string;
-    imageUrl: string;
-  };
-};
 
 const statusLabels = ['Active', 'Pending', 'Transferred', 'Used'] as const;
 const statusColors = ['#4CAF50', '#FFA726', '#9E9E9E', '#607D8B'];
@@ -76,68 +60,86 @@ export default function MyTicketsScreen() {
     }
   };
 
-const filteredTickets = tickets.filter(
-  (ticket) => Number(ticket.status) === selectedStatus
+const groupedTickets = Object.values(
+  tickets
+    .filter((ticket) => Number(ticket.status) === selectedStatus)
+    .reduce((acc, ticket) => {
+      const key = `${ticket.event.id}-${ticket.status}-${ticket.transactionId ?? 'none'}`;
+      if (!acc[key]) {
+        acc[key] = {
+          event: ticket.event,
+          status: ticket.status,
+          transactionId: ticket.transactionId ?? null, // ✅ הוספת transactionId לקבוצה
+          tickets: [ticket],
+        };
+      } else {
+        acc[key].tickets.push(ticket);
+      }
+      return acc;
+    }, {} as Record<
+      string,
+      {
+        event: Ticket['event'];
+        status: number;
+        transactionId: number | null;
+        tickets: Ticket[];
+      }
+    >)
 );
 
-  const renderTicket = ({ item }: { item: Ticket }) => (
-    <TouchableOpacity
-      style={styles.ticketCard}
-      onPress={() =>
-        router.push({
-          pathname: '/ticket-details',
-          params: { ticket: JSON.stringify(item) },
-        })
-      }
-    >
-      <View style={styles.imageWrapper}>
-        <Image
-          source={{ uri: item.event.imageUrl }}
-          style={styles.ticketImageFull}
-        />
-        <View style={styles.eventNameTag}>
-          <Text style={styles.eventNameText}>{item.event.name}</Text>
-        </View>
-        <View
-          style={[
-            styles.statusTag,
-            { backgroundColor: statusColors[item.status] },
-          ]}
-        >
-          <Text style={styles.statusText}>{statusLabels[item.status]}</Text>
-        </View>
+const renderGroupedTicket = ({ item }: { item: typeof groupedTickets[0] }) => (
+  <TouchableOpacity
+    style={styles.ticketCard}
+    onPress={() =>
+      router.push({
+        pathname: '/ticket-details',
+        params: { tickets: JSON.stringify(item.tickets) },
+      })
+    }
+  >
+    <View style={styles.imageWrapper}>
+      <Image source={{ uri: item.event.imageUrl }} style={styles.ticketImageFull} />
+      <View style={styles.eventNameTag}>
+        <Text style={styles.eventNameText}>{item.event.name}</Text>
       </View>
-
-      <View style={styles.ticketInfoBoxHorizontal}>
-        <View style={styles.detailColumn}>
-          <Text style={styles.label}>DATE</Text>
-          <View style={styles.detailRow}>
-            <MaterialIcons name="date-range" size={16} color="#777" />
-            <Text style={styles.detail}>
-              {new Date(item.event.date).toLocaleDateString()}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.detailColumn}>
-          <Text style={styles.label}>LOCATION</Text>
-          <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={16} color="#777" />
-            <Text style={styles.detail}>{item.event.location}</Text>
-          </View>
-        </View>
-        <View style={styles.detailColumn}>
-          <Text style={styles.label}>PRICE</Text>
-          <View style={styles.detailRow}>
-            <MaterialIcons name="attach-money" size={16} color="#777" />
-            <Text style={styles.detail}>₪{item.price}</Text>
-          </View>
-        </View>
+      <View
+        style={[
+          styles.statusTag,
+          { backgroundColor: statusColors[item.status] },
+        ]}
+      >
+        <Text style={styles.statusText}>{statusLabels[item.status]}</Text>
       </View>
-    </TouchableOpacity>
-  );
+    </View>
 
-  return (
-    <View style={styles.container}>
+    <View style={styles.ticketInfoBoxHorizontal}>
+      <View style={styles.detailColumn}>
+        <Text style={styles.label}>DATE</Text>
+        <Text style={styles.detail}>
+          {new Date(item.event.date).toLocaleDateString()}
+        </Text>
+      </View>
+      <View style={styles.detailColumn}>
+        <Text style={styles.label}>LOCATION</Text>
+        <Text style={styles.detail}>{item.event.location}</Text>
+      </View>
+      <View style={styles.detailColumn}>
+        <Text style={styles.label}>TICKETS</Text>
+        <Text style={styles.detail}>{item.tickets.length}</Text>
+      </View>
+      <View style={styles.detailColumn}>
+        <Text style={styles.label}>PRICE</Text>
+        <Text style={styles.detail}>
+          {item.tickets.length > 1 ? 'Multiple' : `₪${item.tickets[0].price}`}
+        </Text>
+      </View>
+    </View>
+  </TouchableOpacity>
+);
+
+return (
+  <View style={{ flex: 1, alignItems: 'center', backgroundColor: '#fff' }}>
+    <View style={[styles.container, { width: '100%', maxWidth: 700 }]}>
       <View style={styles.tabBar}>
         {statusLabels.map((label, index) => (
           <TouchableOpacity
@@ -160,36 +162,40 @@ const filteredTickets = tickets.filter(
         ))}
       </View>
 
-      {filteredTickets.length === 0 ? (
+      {groupedTickets.length === 0 ? (
         <Text style={styles.emptyText}>
           No {statusLabels[selectedStatus]} tickets found.
         </Text>
       ) : (
         <FlatList
-          data={filteredTickets}
-          renderItem={renderTicket}
-          keyExtractor={(item) => item.id.toString()}
+          data={groupedTickets}
+          renderItem={renderGroupedTicket}
+          keyExtractor={(item) =>
+            `${item.event.id}-${item.status}-${item.transactionId ?? 'none'}-${item.tickets.map(t => t.id).join('-')}`
+          }
           contentContainerStyle={{ paddingBottom: 100 }}
         />
       )}
-<TouchableOpacity style={styles.refreshButton} onPress={refreshTickets}>
-<Animated.Image
-  source={require('../../assets/images/refresh.png')}
-  style={[
-    styles.refreshIcon,
-    {
-      transform: [{
-        rotate: rotateAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: ['0deg', '360deg'],
-        }),
-      }],
-    }
-  ]}
-/>
-</TouchableOpacity>
     </View>
-  );
+
+    <TouchableOpacity style={styles.refreshButton} onPress={refreshTickets}>
+      <Animated.Image
+        source={require('../../assets/images/refresh.png')}
+        style={[
+          styles.refreshIcon,
+          {
+            transform: [{
+              rotate: rotateAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0deg', '360deg'],
+              }),
+            }],
+          }
+        ]}
+      />
+    </TouchableOpacity>
+  </View>
+);
 }
 
 

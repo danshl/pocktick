@@ -63,6 +63,7 @@ const signInWithApple = async () => {
 
     await AsyncStorage.setItem('authToken', result.token);
     await AsyncStorage.setItem('userEmail', result.email);
+    console.log(AsyncStorage.getAllKeys);
     router.replace('/load-screen');
   } catch (e: any) {
     if (e.code === 'ERR_REQUEST_CANCELED') {
@@ -125,10 +126,14 @@ const handleLogin = async () => {
       setError(true);
       return;
     }
-
     await AsyncStorage.setItem('authToken', result.token);
     await AsyncStorage.setItem('userEmail', email);
-    console.log("s'");
+    console.log("s'seddd");
+    const token = result.token;
+    for (let i = 0; i < token.length; i += 100) {
+  console.log(token.slice(i, i + 100));
+}
+    console.log(result.token);
     router.replace('/load-screen');
 
   } catch (error) {
