@@ -206,6 +206,14 @@ return (
       <Feather name="chevron-right" size={20} color="#888" />
     </TouchableOpacity>
 
+    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/verify-seller')}>
+      <View style={styles.settingRow}>
+        <Feather name="check-circle" size={24} color="#333" />
+        <Text style={styles.settingText}>Seller Verification</Text>
+      </View>
+      <Feather name="chevron-right" size={20} color="#888" />
+    </TouchableOpacity>
+
     <View style={styles.settingItem}>
       <View style={styles.settingRow}>
         <Feather name="bell" size={24} color="#333" />

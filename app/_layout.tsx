@@ -44,6 +44,8 @@ export default function RootLayout() {
           <Stack.Screen name="VerifyEmailScreen" options={{ headerShown: false }} />
           <Stack.Screen name="SetNewPasswordScreen" options={{ headerShown: false }} />
           <Stack.Screen name="GoogleSignIn" options={{ headerShown: false }} />
+          <Stack.Screen name="verify-seller" options={{ headerShown: false }} />
+          <Stack.Screen name="open-tickets-screen" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />

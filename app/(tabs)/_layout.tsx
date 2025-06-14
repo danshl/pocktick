@@ -57,6 +57,16 @@ export default function TabLayout() {
   }}
 />
 
+<Tabs.Screen
+  name="manual-transfers"
+  options={{
+    title: 'Manual Transfers',
+    tabBarIcon: ({ color }) => (
+      <Ionicons name="swap-horizontal" size={24} color={color} />
+    ),
+  }}
+/>
+
   <Tabs.Screen
     name="profile"
     options={{
