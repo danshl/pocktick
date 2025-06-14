@@ -281,38 +281,67 @@ const handleSubmit = async () => {
   }
 };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Manual Transfers</Text>
-      {renderMessageByStatus()}
-      <Text style={styles.description}>
-        Here you can view tickets transferred between users for events not supported directly by our platform.
-      </Text>
-      <ScrollView
-  style={{ flex: 1 }}
-  refreshControl={
-    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-  }
->
-
-{transfers.map((transfer, index) => {
-  const isBuyer = transfer.buyerEmail?.toLowerCase() === currentEmail.toLowerCase();
-  const counterparty = isBuyer ? transfer.sellerEmail : transfer.buyerEmail;
-  const isConfirmed = transfer.isConfirmed === true;
-
-return (
-  <View key={index} style={styles.card}>
-    {/* Label: Active / Pending */}
-    <View style={styles.statusRow}>
-      <Text style={[styles.statusLabel, { backgroundColor: isConfirmed ? '#4CAF50' : '#FFA500' }]}>
-        {isConfirmed ? 'Active' : 'Pending'}
-      </Text>
-    </View>
-
-    <Text style={styles.cardTitle}>{transfer.eventName}</Text>
-    <Text style={styles.cardText}>
-      Tickets number: {JSON.parse(transfer.ticketFilePathsJson || '[]').length}
+ return (
+<View style={styles.container}>
+  <View style={styles.headerBox}>
+    <Text style={styles.title}>Manual Transfers</Text>
+    <Text style={styles.description}>
+      Here you can view tickets transferred between users for events not supported directly by our platform.
     </Text>
+  </View>
+
+  {renderMessageByStatus()}
+
+
+    <ScrollView
+      style={{ flex: 1 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {transfers.map((transfer, index) => {
+        const isBuyer = transfer.buyerEmail?.toLowerCase() === currentEmail.toLowerCase();
+        const counterparty = isBuyer ? transfer.sellerEmail : transfer.buyerEmail;
+        const isConfirmed = transfer.isConfirmed === true;
+        const ticketCount = JSON.parse(transfer.ticketFilePathsJson || '[]').length;
+
+        return (
+      <View key={index} style={styles.card}>
+    <View style={styles.imageWrapper}>
+      <Image
+        source={require('../../assets/images/Feature graphic.png')}
+        style={styles.cardImage}
+      />
+
+  {/* Title inside image */}
+  <Text style={styles.overlayTitle}>{transfer.eventName}</Text>
+
+  {/* Status badge inside image */}
+<View
+  style={[
+    styles.statusLabelWrapper,
+    {
+      backgroundColor: isConfirmed
+        ? isBuyer
+          ? '#4CAF50'   // קונה → Active (ירוק)
+          : '#2196F3'   // מוכר → Transferred (כחול)
+        : '#FFA500',     // Pending (כתום)
+    },
+  ]}
+>
+  <Text style={styles.statusLabelText}>
+    {isConfirmed
+      ? isBuyer
+        ? 'Active'
+        : 'Transferred'
+      : 'Pending'}
+  </Text>
+</View>
+</View>
+
+  <View style={styles.cardContent}>
+    <Text style={styles.cardTitle}>{transfer.eventName}</Text>
+    <Text style={styles.cardText}>Tickets: {ticketCount}</Text>
     <Text style={styles.cardText}>Date & Time: {transfer.dateTime}</Text>
     <Text style={styles.cardText}>
       {isBuyer ? 'Seller Email' : 'Buyer Email'}: {counterparty || 'N/A'}
@@ -320,17 +349,13 @@ return (
     <Text style={styles.cardText}>Seat: {transfer.seatLocation}</Text>
     <Text style={styles.cardText}>Price: ₪{transfer.price}</Text>
 
-    {/* Conditional action buttons */}
+    {/* Buttons */}
     {!isConfirmed ? (
       <TouchableOpacity
         style={styles.cardButton}
-        onPress={() => {
-          if (isBuyer) {
-            handleBuyTransfer(transfer.id);
-          } else {
-            handleCancelTransfer(transfer.id);
-          }
-        }}
+        onPress={() =>
+          isBuyer ? handleBuyTransfer(transfer.id) : handleCancelTransfer(transfer.id)
+        }
       >
         <Text style={styles.cardButtonText}>
           {isBuyer ? 'Buy' : 'Cancel Transfer'}
@@ -339,112 +364,132 @@ return (
     ) : isBuyer ? (
       <TouchableOpacity
         style={styles.cardButton}
-        onPress={() => {
-          router.push({ pathname: '/open-tickets-screen', params: { transferId: transfer.id } });
-        }}
+        onPress={() =>
+          router.push({ pathname: '/open-tickets-screen', params: { transferId: transfer.id } })
+        }
       >
         <Text style={styles.cardButtonText}>Show My Tickets</Text>
       </TouchableOpacity>
     ) : (
       <View style={[styles.cardButton, { backgroundColor: '#1b2b68' }]}>
-        <Text
-          style={[
-            styles.cardButtonText,
-            { color: '#fff', textAlign: 'center', flexWrap: 'wrap' },
-          ]}
-        >
-          Ticket transferred. Payment will be processed after the event.
+        <Text style={[styles.cardButtonText, { color: '#fff', textAlign: 'center' }]}>
+           Ticket transferred. Payment will be processed after the event.
         </Text>
       </View>
     )}
   </View>
-);
-})}</ScrollView>
-      {isVerifiedSeller ? (
-  <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-    <Ionicons name="add" size={28} color="#fff" />
-  </TouchableOpacity>
-) : (
-  <>
-    <Text style={styles.warningText}>
-      You must complete seller verification to manually transfer tickets.
-    </Text>
-    <TouchableOpacity style={[styles.fabDisabled]} disabled={true}>
-      <Ionicons name="lock-closed" size={28} color="#fff" />
-    </TouchableOpacity>
-  </>
-)}
+</View>
+        );
+      })}
+    </ScrollView>
 
-      <Modal visible={modalVisible} animationType="slide">
-        <ScrollView contentContainerStyle={styles.modalContent}>
-          <Text style={styles.modalTitle}>Add Manual Transfer</Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Number of Tickets"
-            keyboardType="numeric"
-            value={ticketCount}
-            onChangeText={setTicketCount}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Event Name"
-            value={eventName}
-            onChangeText={setEventName}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Seat Location"
-            value={seatLocation}
-            onChangeText={setSeatLocation}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Buyer Email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={buyerEmail}
-            onChangeText={setBuyerEmail}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Date & Time"
-            value={dateTime}
-            onChangeText={setDateTime}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Price (₪)"
-            keyboardType="numeric"
-            value={price}
-            onChangeText={setPrice}
-          />
-          <TextInput
-            style={[styles.input, { height: 80 }]}
-            placeholder="Additional Details"
-            value={details}
-            multiline
-            onChangeText={setDetails}
-          />
-
-          <TouchableOpacity style={styles.uploadButton} onPress={pickFile}>
-            <Text style={styles.uploadButtonText}>
-              {fileUris.length > 0 ? `Uploaded ${fileUris.length} File(s) ✔️` : 'Upload Ticket File'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
-            <Text style={styles.saveButtonText}>Save Transfer</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={resetForm}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-
-        </ScrollView>
-      </Modal>
+    {isVerifiedSeller ? (
+      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+    ) : (
+      <>
+        <Text style={styles.warningText}>
+          You must complete seller verification to manually transfer tickets.
+        </Text>
+        <TouchableOpacity style={[styles.fabDisabled]} disabled={true}>
+          <Ionicons name="lock-closed" size={28} color="#fff" />
+        </TouchableOpacity>
+      </>
+    )}
+<Modal visible={modalVisible} animationType="slide">
+  <ScrollView contentContainerStyle={styles.modalContent}>
+    <View style={styles.headerBoxModal}>
+      <Image
+        source={require('../../assets/images/log_ye.png')}
+        style={styles.headerImage}
+        resizeMode="contain"
+      />
     </View>
-  );
+
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Number of Tickets</Text>
+  <TextInput
+    style={styles.input}
+    keyboardType="numeric"
+    value={ticketCount}
+    onChangeText={setTicketCount}
+  />
+</View>
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Event Name</Text>
+  <TextInput
+    style={styles.input}
+    value={eventName}
+    onChangeText={setEventName}
+  />
+</View>
+
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Seat Location</Text>
+  <TextInput
+    style={styles.input}
+    value={seatLocation}
+    onChangeText={setSeatLocation}
+  />
+</View>
+
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Buyer Email</Text>
+  <TextInput
+    style={styles.input}
+    keyboardType="email-address"
+    autoCapitalize="none"
+    value={buyerEmail}
+    onChangeText={setBuyerEmail}
+  />
+</View>
+
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Date & Time</Text>
+  <TextInput
+    style={styles.input}
+    value={dateTime}
+    onChangeText={setDateTime}
+  />
+</View>
+
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Price (₪)</Text>
+  <TextInput
+    style={styles.input}
+    keyboardType="numeric"
+    value={price}
+    onChangeText={setPrice}
+  />
+</View>
+
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Additional Details</Text>
+  <TextInput
+    style={[styles.input, { height: 80 }]}
+    multiline
+    value={details}
+    onChangeText={setDetails}
+  />
+</View>
+        <TouchableOpacity style={styles.uploadButton} onPress={pickFile}>
+          <Text style={styles.uploadButtonText}>
+            {fileUris.length > 0 ? `Uploaded ${fileUris.length} File(s) ✔️` : 'Upload Ticket File'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
+          <Text style={styles.saveButtonText}>Save Transfer</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={resetForm}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </Modal>
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
@@ -454,18 +499,96 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 80,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20
-  },
+card: {
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  overflow: 'hidden',
+  marginBottom: 20,
+  elevation: 3, // for Android shadow
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 0,
+
+  // ✅ קו כחול מסביב
+  borderWidth: 2,
+  borderColor: '#1D2B64',
+},
+
+cardImage: {
+  width: '100%',
+  height: 140,
+  resizeMode: 'cover',
+},
+
+cardContent: {
+  padding: 16,
+},
+
+cardTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  marginBottom: 6,
+},
+
+cardText: {
+  fontSize: 14,
+  color: '#333',
+  marginBottom: 4,
+},
+
+statusRow: {
+  marginBottom: 10,
+},
+
+statusLabel: {
+  color: '#fff',
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 6,
+  fontSize: 12,
+  alignSelf: 'flex-start',
+},
+
+cardButton: {
+  backgroundColor: '#1D2B64',
+  paddingVertical: 10,
+  paddingHorizontal: 16, 
+  borderRadius: 8,
+  marginTop: 10,
+},
+
+cardButtonText: {
+  color: '#fff',
+  textAlign: 'center',
+  fontWeight: 'bold',
+},
+headerBox: {
+  backgroundColor: '#d9ecff',
+  paddingTop: 10, // מרווח מהסטטוס בר (ניתן להתאים)
+  paddingBottom: 30,
+  paddingHorizontal: 20,
+  borderBottomLeftRadius: 20,
+  borderBottomRightRadius: 20,
+    borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  marginBottom: 20,
+},
+
+title: {
+  fontSize: 22,
+  fontWeight: 'bold',
+  color: '#1b2b68',
+  textAlign: 'center',
+  marginBottom: 5,
+},
+
+description: {
+  fontSize: 14,
+  color: '#1b2b68',
+  textAlign: 'center',
+  marginTop: 5,
+},
   fab: {
     position: 'absolute',
     right: 25,
@@ -492,16 +615,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  input: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 15,
-  },
+ 
   uploadButton: {
-    backgroundColor: '#eee',
+    backgroundColor: '#ffb703',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -531,65 +647,17 @@ const styles = StyleSheet.create({
     color: '#888',
     textDecorationLine: 'underline',
   },
- 
-card: {
-  backgroundColor: '#f1f5ff',
-  borderColor: '#1D2B64',
-  borderWidth: 2,
-  borderRadius: 12,
-  padding: 16,
-  marginBottom: 20,
-  elevation: 2,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.1,
-  shadowRadius: 3,
-},
-
-cardTitle: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: '#1D2B64',
-  marginBottom: 12,
-  textAlign: 'left',
-},
-
-cardText: {
-  fontSize: 14,
-  color: '#333',
-  marginBottom: 4,
-  lineHeight: 20,
-},
-
-cardButton: {
-  marginTop: 12,
-  backgroundColor: '#1D2B64',
-  paddingVertical: 10,
-  borderRadius: 6,
-  alignItems: 'center',
-},
-
-cardButtonText: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 14,
-},
-statusRow: {
+ overlayTitle: {
   position: 'absolute',
-  top: 10,
-  right: 10,
-},
-
-statusLabel: {
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 12,
+  top: 8,
+  left: 8,
   color: '#fff',
-  fontSize: 12,
+  fontSize: 16,
   fontWeight: 'bold',
-  overflow: 'hidden',
-  textTransform: 'uppercase',
+  zIndex: 2,
+  maxWidth: '65%',
 },
+ 
 warningText: {
   textAlign: 'center',
   color: '#c00',
@@ -611,5 +679,59 @@ fabDisabled: {
   alignItems: 'center',
   justifyContent: 'center',
   opacity: 0.7,
+},
+imageWrapper: {
+  position: 'relative',
+},
+
+statusLabelWrapper: {
+  position: 'absolute',
+  top: 8,
+  right: 8,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 6,
+  zIndex: 2,
+},
+
+statusLabelText: {
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: 'bold',
+},
+inputGroup: {
+  marginBottom: 15,
+},
+
+label: {
+  fontSize: 14,
+  fontWeight: 'bold',
+  color: '#333',
+  marginBottom: 6,
+},
+
+input: {
+  height: 50,
+  borderColor: '#ccc',
+  borderWidth: 1,
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  backgroundColor: '#fff',
+},
+headerImage: {
+  width: '100%',
+  height: 80,
+  marginTop: 10,
+},
+headerBoxModal: {
+  backgroundColor: '#1D2B64',
+  paddingTop: 10,
+  paddingBottom: 30,
+  paddingHorizontal: 20,
+  borderBottomLeftRadius: 20,
+  borderBottomRightRadius: 20,
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  marginBottom: 20,
 },
 });

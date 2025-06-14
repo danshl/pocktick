@@ -13,7 +13,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons'; // ✅ הוספת אייקונים
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 const screenWidth = Dimensions.get('window').width;
 
 export default function OpenTicketsScreen() {
@@ -24,7 +24,7 @@ export default function OpenTicketsScreen() {
   const [pressedTime, setPressedTime] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef(null);
-
+const [showInfo, setShowInfo] = useState(false);
   const handlePressIn = () => setPressedTime(Date.now());
 
   const handlePressOut = async () => {
@@ -71,34 +71,66 @@ export default function OpenTicketsScreen() {
     setActiveIndex(index);
   };
 
-  return (
-    <View style={styles.container}>
-      {/* ✅ חץ חזור */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={28} color="#1D2B64" />
-      </TouchableOpacity>
-<Image
-  source={require('../assets/images/name.png')}
-  style={styles.headerImage}
-  resizeMode="contain"
-/>
+return (
+<SafeAreaView style={styles.container}>
+  {/* חץ חזור */}
+  <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+    <Ionicons name="arrow-back" size={28} color="#1D2B64" />
+  </TouchableOpacity>
+
+  <ScrollView contentContainerStyle={styles.scrollContent}>
+    {/* כאן תמקם את התמונה, והיא תהיה מתחת לחץ */}
+    <View style={{ alignItems: 'center', marginTop:-60 }}>
+      <Image
+        source={require('../assets/images/name.png')}
+        style={styles.headerImage}
+        resizeMode="contain"
+      />
+    </View>
+
       {tickets.length === 0 && !loading && (
-        <View style={styles.centered}>
-          <TouchableOpacity
-            style={styles.circleButton}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-          >
-            <Text style={styles.buttonText}>Press & Hold{'\n'}3 Seconds</Text>
-          </TouchableOpacity>
+        <View>
           <Text style={styles.warning}>
             Once opened, the responsibility for the tickets is transferred to you.
             We recommend opening them only shortly before the event.
           </Text>
+
+          <View style={styles.centered}>
+            <TouchableOpacity
+              style={styles.circleButton}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+            >
+              <Text style={styles.buttonText}>Press & Hold{'\n'}3 Seconds</Text>
+            </TouchableOpacity>
+
+            <View style={styles.infoBox}>
+              <TouchableOpacity onPress={() => setShowInfo(!showInfo)}>
+                <View style={styles.infoHeader}>
+                  <View style={styles.infoIcon}>
+                    <Ionicons name="help-circle-outline" size={20} color="#1D2B64" />
+                  </View>
+                  <Text style={styles.infoTitle}>Why can't I see my tickets right now?</Text>
+                </View>
+              </TouchableOpacity>
+
+              {showInfo && (
+                <Text style={styles.infoText}>
+                  For your protection, tickets are securely locked until you actively open them.
+                  This ensures that if a ticket was used before your unlock time, we can detect it and refund you in full.
+                  {'\n\n'}
+                  Once opened, the responsibility is transferred to you, and we can no longer verify the tickets.
+                  So rest assured — we validate everything beforehand so you can feel safe.
+                </Text>
+              )}
+            </View>
+          </View>
         </View>
       )}
 
-      {loading && <ActivityIndicator size="large" color="#1D2B64" style={{ marginTop: 20 }} />}
+      {loading && (
+        <ActivityIndicator size="large" color="#1D2B64" style={{ marginTop: 20 }} />
+      )}
 
       {tickets.length > 0 && (
         <View style={{ flex: 1 }}>
@@ -131,23 +163,24 @@ export default function OpenTicketsScreen() {
           </View>
         </View>
       )}
-    </View>
-  );
+    </ScrollView>
+  </SafeAreaView>
+);
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+   
     backgroundColor: '#fff',
     justifyContent: 'center',
   },
-  backButton: {
-    position: 'absolute',
-    top: 88,
-    left: 24,
-    zIndex: 10,
-  },
+backButton: {
+  position: 'absolute',
+  top: 80, // עכשיו כבר יש safe area, אין צורך בפיקסלים
+  left: 20,
+  zIndex: 10,
+},
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -171,6 +204,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1b2b68',
     marginTop: 12,
+    marginBottom: 18,
     textAlign: 'center',
     fontWeight: 'bold',
     paddingHorizontal: 10,
@@ -209,11 +243,63 @@ ticketWrapper: {
   activeDot: {
     backgroundColor: '#1D2B64',
   },
-  headerImage: {
+headerImage: {
   width: 180,
   height: 60,
   alignSelf: 'center',
-  marginTop: 100,
-  marginBottom: 0,
+  marginTop: 40, // במקום 150
+  marginBottom: 40,
 },
+infoBox: {
+  backgroundColor: '#f0f4ff',
+  borderRadius: 10,
+  padding: 10,
+  borderWidth: 1,
+  borderColor: '#cfd8ff',
+  minHeight: 50,         // כדי לא לקרוס לגובה קטן
+  width: '100%',          // 👈 מחייב את הרוחב להיות מלא
+  alignSelf: 'center',    // מבטיח שהקופסה לא תזוז לשוליים
+},
+
+infoHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+
+infoIcon: {
+  width: 24,
+  height: 24,
+  borderRadius: 12,
+  backgroundColor: '#dbe3ff',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 8,
+},
+
+infoTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#1D2B64',
+  flex: 1,
+  flexWrap: 'wrap',
+},
+
+infoText: {
+  fontSize: 14,
+  color: '#333',
+  lineHeight: 20,
+},
+scrollContent: {
+  padding: 24,
+  paddingTop: 120,
+  paddingBottom: 40,
+},
+showMoreText: {
+  color: '#1D2B64',
+  fontWeight: '600',
+  fontSize: 14,
+  marginTop: 4,
+  textDecorationLine: 'underline',
+}
 });
