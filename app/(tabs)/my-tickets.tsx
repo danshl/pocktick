@@ -16,6 +16,7 @@ import { Animated, Easing } from 'react-native';
 import { useRef, useEffect } from 'react';
 import { Ticket } from '../types';
 
+import { I18nManager } from 'react-native';
 
 
 const statusLabels = ['Active', 'Pending', 'Transferred', 'Used'] as const;
@@ -48,6 +49,7 @@ export default function MyTicketsScreen() {
 
   const refreshTickets = async () => {
     try {
+
       setRefreshing(true);
       startRotation(); // התחלת סיבוב
       const updatedTickets = await fetchTickets();

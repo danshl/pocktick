@@ -293,12 +293,13 @@ const handleSubmit = async () => {
   {renderMessageByStatus()}
 
 
-    <ScrollView
-      style={{ flex: 1 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
+<ScrollView
+  style={{ flex: 1 }}
+  contentContainerStyle={{ paddingBottom: 100 }} 
+  refreshControl={
+    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+  }
+>
       {transfers.map((transfer, index) => {
         const isBuyer = transfer.buyerEmail?.toLowerCase() === currentEmail.toLowerCase();
         const counterparty = isBuyer ? transfer.sellerEmail : transfer.buyerEmail;
@@ -475,7 +476,7 @@ const handleSubmit = async () => {
 </View>
         <TouchableOpacity style={styles.uploadButton} onPress={pickFile}>
           <Text style={styles.uploadButtonText}>
-            {fileUris.length > 0 ? `Uploaded ${fileUris.length} File(s) ✔️` : 'Upload Ticket File'}
+            {fileUris.length > 0 ? `Uploaded ${fileUris.length} File(s) ✔️` : 'Upload ticket images'}
           </Text>
         </TouchableOpacity>
 
@@ -493,12 +494,12 @@ const handleSubmit = async () => {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-    paddingTop: 80,
-  },
+container: {
+  flex: 1,
+  backgroundColor: '#fff',
+  padding: 20,
+  paddingTop: Platform.OS === 'ios' ? 80 : 60, // ← הוספת מרווח גדול יותר לאנדרואיד
+},
 card: {
   backgroundColor: '#fff',
   borderRadius: 12,

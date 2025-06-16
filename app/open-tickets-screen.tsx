@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons'; // ✅ הוספת אייקוני�
 import { SafeAreaView } from 'react-native-safe-area-context';
 const screenWidth = Dimensions.get('window').width;
 
+
 export default function OpenTicketsScreen() {
   const { transferId } = useLocalSearchParams();
   const router = useRouter(); // ✅ נדרש לניווט אחורה
@@ -26,6 +27,7 @@ export default function OpenTicketsScreen() {
   const scrollRef = useRef(null);
 const [showInfo, setShowInfo] = useState(false);
   const handlePressIn = () => setPressedTime(Date.now());
+const [checkedOpenedStatus, setCheckedOpenedStatus] = useState(false);
 
   const handlePressOut = async () => {
     const now = Date.now();
@@ -71,99 +73,132 @@ const [showInfo, setShowInfo] = useState(false);
     setActiveIndex(index);
   };
 
+useEffect(() => {
+  const checkIfAlreadyOpened = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      const res = await fetch(
+        `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/${transferId}/is-opened`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res.ok) {
+        const isOpened = await res.json();
+        if (isOpened) {
+          await openTickets(); // מציג מיד אם כבר נפתח
+        }
+      }
+    } catch (err) {
+      console.error('Error checking if tickets are already opened', err);
+    } finally {
+      setCheckedOpenedStatus(true); // ← תמיד להפעיל לאחר הסיום
+    }
+  };
+
+  if (transferId) {
+    checkIfAlreadyOpened();
+  }
+}, [transferId]);
 return (
-<SafeAreaView style={styles.container}>
-  {/* חץ חזור */}
-  <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-    <Ionicons name="arrow-back" size={28} color="#1D2B64" />
-  </TouchableOpacity>
+  <SafeAreaView style={styles.container}>
+    {!checkedOpenedStatus ? (
+      <ActivityIndicator size="large" color="#1D2B64" style={{ marginTop: 80 }} />
+    ) : (
+      <>
+        {/* חץ חזור */}
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={28} color="#1D2B64" />
+        </TouchableOpacity>
 
-  <ScrollView contentContainerStyle={styles.scrollContent}>
-    {/* כאן תמקם את התמונה, והיא תהיה מתחת לחץ */}
-    <View style={{ alignItems: 'center', marginTop:-60 }}>
-      <Image
-        source={require('../assets/images/name.png')}
-        style={styles.headerImage}
-        resizeMode="contain"
-      />
-    </View>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={{ alignItems: 'center', marginTop: -60 }}>
+            <Image
+              source={require('../assets/images/name.png')}
+              style={styles.headerImage}
+              resizeMode="contain"
+            />
+          </View>
 
-      {tickets.length === 0 && !loading && (
-        <View>
-          <Text style={styles.warning}>
-            Once opened, the responsibility for the tickets is transferred to you.
-            We recommend opening them only shortly before the event.
-          </Text>
+          {tickets.length === 0 && !loading && (
+            <View>
+              <Text style={styles.warning}>
+                Once opened, the responsibility for the tickets is transferred to you.
+                We recommend opening them only shortly before the event.
+              </Text>
 
-          <View style={styles.centered}>
-            <TouchableOpacity
-              style={styles.circleButton}
-              onPressIn={handlePressIn}
-              onPressOut={handlePressOut}
-            >
-              <Text style={styles.buttonText}>Press & Hold{'\n'}3 Seconds</Text>
-            </TouchableOpacity>
+              <View style={styles.centered}>
+                <TouchableOpacity
+                  style={styles.circleButton}
+                  onPressIn={handlePressIn}
+                  onPressOut={handlePressOut}
+                >
+                  <Text style={styles.buttonText}>Press & Hold{'\n'}3 Seconds</Text>
+                </TouchableOpacity>
 
-            <View style={styles.infoBox}>
-              <TouchableOpacity onPress={() => setShowInfo(!showInfo)}>
-                <View style={styles.infoHeader}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="help-circle-outline" size={20} color="#1D2B64" />
-                  </View>
-                  <Text style={styles.infoTitle}>Why can't I see my tickets right now?</Text>
+                <View style={styles.infoBox}>
+                  <TouchableOpacity onPress={() => setShowInfo(!showInfo)}>
+                    <View style={styles.infoHeader}>
+                      <View style={styles.infoIcon}>
+                        <Ionicons name="help-circle-outline" size={20} color="#1D2B64" />
+                      </View>
+                      <Text style={styles.infoTitle}>Why can't I see my tickets right now?</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {showInfo && (
+                    <Text style={styles.infoText}>
+                      For your protection, tickets are securely locked until you actively open them.
+                      This ensures that if a ticket was used before your unlock time, we can detect it and refund you in full.
+                      {'\n\n'}
+                      Once opened, the responsibility is transferred to you, and we can no longer verify the tickets.
+                      So rest assured — we validate everything beforehand so you can feel safe.
+                    </Text>
+                  )}
                 </View>
-              </TouchableOpacity>
-
-              {showInfo && (
-                <Text style={styles.infoText}>
-                  For your protection, tickets are securely locked until you actively open them.
-                  This ensures that if a ticket was used before your unlock time, we can detect it and refund you in full.
-                  {'\n\n'}
-                  Once opened, the responsibility is transferred to you, and we can no longer verify the tickets.
-                  So rest assured — we validate everything beforehand so you can feel safe.
-                </Text>
-              )}
-            </View>
-          </View>
-        </View>
-      )}
-
-      {loading && (
-        <ActivityIndicator size="large" color="#1D2B64" style={{ marginTop: 20 }} />
-      )}
-
-      {tickets.length > 0 && (
-        <View style={{ flex: 1 }}>
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            contentContainerStyle={styles.scrollContainer}
-          >
-            {tickets.map((uri, idx) => (
-              <View key={idx} style={styles.ticketWrapper}>
-                <Image source={{ uri }} style={styles.ticketImage} resizeMode="contain" />
               </View>
-            ))}
-          </ScrollView>
+            </View>
+          )}
 
-          <View style={styles.dotsContainer}>
-            {tickets.map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  activeIndex === i ? styles.activeDot : null,
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-    </ScrollView>
+          {loading && (
+            <ActivityIndicator size="large" color="#1D2B64" style={{ marginTop: 20 }} />
+          )}
+
+          {tickets.length > 0 && (
+            <View style={{ flex: 1 }}>
+              <ScrollView
+                ref={scrollRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+                contentContainerStyle={styles.scrollContainer}
+              >
+                {tickets.map((uri, idx) => (
+                  <View key={idx} style={styles.ticketWrapper}>
+                    <Image source={{ uri }} style={styles.ticketImage} resizeMode="contain" />
+                  </View>
+                ))}
+              </ScrollView>
+
+              <View style={styles.dotsContainer}>
+                {tickets.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      activeIndex === i ? styles.activeDot : null,
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      </>
+    )}
   </SafeAreaView>
 );
 }

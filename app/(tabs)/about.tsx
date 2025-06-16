@@ -1,34 +1,41 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-
+import { Image } from 'react-native';
 export default function AboutUsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>About PockTick</Text>
+         
+<View style={styles.headerImageContainer}>
+  <Image
+    source={require('../../assets/images/name.png')} // או URI חיצוני
+    style={styles.headerImage}
+    resizeMode="contain"
+  />
+</View>
 
-      <Text style={styles.sectionTitle}>Your All-in-One Ticket Wallet</Text>
+      <Text style={styles.sectionTitle}>Your Smart & Secure Ticket Wallet</Text>
       <Text style={styles.paragraph}>
-        <Text style={styles.bold}>PockTick</Text> is your go-to app for storing, managing, and transferring all your event tickets. Everything stays in one place – simple, secure, and always available.
+        <Text style={styles.bold}>PockTick</Text> is an all-in-one platform for securely storing, managing, and transferring event tickets — whether they were purchased from official ticket companies or private individuals.
       </Text>
 
-      <Text style={styles.sectionTitle}>No More Lost Tickets</Text>
+      <Text style={styles.sectionTitle}>Direct from Companies</Text>
       <Text style={styles.paragraph}>
-        Companies are now issuing tickets directly to PockTick, so you never have to dig through emails or screenshots. Each ticket is stored, updated, and verified in your personal wallet.
+        Tickets from companies that work with PockTick are automatically delivered to your app. No more digging through emails or worrying about lost files. Just open the app and you're ready to go.
       </Text>
 
-      <Text style={styles.sectionTitle}>Fraud-Free Transfers</Text>
+      <Text style={styles.sectionTitle}>Safe Peer-to-Peer Transfers</Text>
       <Text style={styles.paragraph}>
-        Every ticket transfer generates a new QR code – making sure no one can reuse or resell a ticket dishonestly. We make events safer for everyone.
+        Received a ticket from a friend or bought one from someone else? We make sure it's secure. Private sellers go through a verification process, and tickets are locked until you choose to open them — ensuring full protection.
       </Text>
 
-      <Text style={styles.sectionTitle}>Fair Resale Pricing</Text>
+      <Text style={styles.sectionTitle}>Verified and Transparent</Text>
       <Text style={styles.paragraph}>
-        To avoid scalping and inflated prices, tickets are always resold at <Text style={styles.bold}>110%</Text> of the original price. It’s fair for buyers, and still worthwhile for sellers.
+        Every transfer is tracked, every QR code is refreshed, and every ticket is checked. From event details to seat types, we make sure what you get is exactly what you expected.
       </Text>
 
-      <Text style={styles.sectionTitle}>One Secure Platform</Text>
+      <Text style={styles.sectionTitle}>One Community, One Account</Text>
       <Text style={styles.paragraph}>
-        <Text style={styles.bold}>PockTick</Text> is the first app built to securely manage and resell all your tickets – in a way that's simple, safe, and transparent.
+        Each user has a single verified account, valid for life. Sellers who violate trust are permanently removed, so you can feel confident buying and selling.
       </Text>
 
       <View style={styles.contactContainer}>
@@ -51,12 +58,11 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     paddingBottom: 100,
   },
-  title: {
-    fontSize: 28,
+   title: {
+    fontSize: 25,
     fontWeight: 'bold',
-    color: '#1D2B64',
-    marginBottom: 15,
-    textAlign: 'center',
+    marginBottom: 20,
+    marginTop: 0,
   },
   sectionTitle: {
     fontSize: 18,
@@ -95,4 +101,12 @@ const styles = StyleSheet.create({
     color: '#1D2B64',
     fontWeight: '600',
   },
+  headerImageContainer: {
+  alignItems: 'center',
+  marginBottom: 20,
+},
+headerImage: {
+  width: 180,
+  height: 60,
+},
 });

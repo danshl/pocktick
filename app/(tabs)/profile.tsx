@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { ScrollView } from 'react-native';
 
 type UserProfile = {
   fullName: string;
@@ -161,10 +162,14 @@ const handleConfirmDelete = async (code: string) => {
   if (error || !profile) {
     return <Text style={styles.errorText}>{error || "Failed to load profile."}</Text>;
   }
-
+ 
 return (
-  <View style={styles.container}>
-    <Text style={styles.title}>Settings</Text>
+  <ScrollView
+    style={styles.container}
+    contentContainerStyle={{ paddingBottom: 40 }}
+    showsVerticalScrollIndicator={false}
+  >
+    <Text style={styles.title}>Profile</Text>
 
     <View style={styles.profileHeader}>
       <Image
@@ -222,80 +227,75 @@ return (
       <Switch value={notifications} onValueChange={() => setNotifications(!notifications)} />
     </View>
 
-<TouchableOpacity
-  style={styles.deleteButton}
-  onPress={async () => {
-    Alert.alert(
-      "Are you sure?",
-      "This will permanently delete your account.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Yes, Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const token = await AsyncStorage.getItem('authToken');
-              const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/request-delete', {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              });
+    <TouchableOpacity
+      style={styles.deleteButton}
+      onPress={async () => {
+        Alert.alert(
+          "Are you sure?",
+          "This will permanently delete your account.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Yes, Delete",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  const token = await AsyncStorage.getItem('authToken');
+                  const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/request-delete', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
 
-              if (!response.ok) {
-                const error = await response.json();
-                Alert.alert("Error", error.message || "Failed to request deletion code.");
-                return;
-              }
+                  if (!response.ok) {
+                    const error = await response.json();
+                    Alert.alert("Error", error.message || "Failed to request deletion code.");
+                    return;
+                  }
 
-              Alert.alert("Code Sent", "A verification code was sent to your email.");
-              setShowDeleteModal(true);
-            } catch (err) {
-              console.error("Error requesting deletion code:", err);
-              Alert.alert("Error", "Something went wrong while requesting the code.");
+                  Alert.alert("Code Sent", "A verification code was sent to your email.");
+                  setShowDeleteModal(true);
+                } catch (err) {
+                  console.error("Error requesting deletion code:", err);
+                  Alert.alert("Error", "Something went wrong while requesting the code.");
+                }
+              },
             }
-          },
-        }
-      ]
-    );
-  }}
->
-  <View style={styles.deleteContent}>
+          ]
+        );
+      }}
+    >
+      <View style={styles.deleteContent}>
+        <Text style={styles.deleteText}>Delete My Account</Text>
+      </View>
+    </TouchableOpacity>
 
-    <Text style={styles.deleteText}>Delete My Account</Text>
-  </View>
-</TouchableOpacity>
-
-    {/* 👇 זה המודל שמופיע אחרי אישור המחיקה */}
     {showDeleteModal && (
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalBox}>
-      <Text style={styles.modalTitle}>Confirm Account Deletion</Text>
-      <Text style={styles.modalText}>Enter the code sent to your email</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Enter Code"
-        secureTextEntry={false}
-      />
-      <TouchableOpacity
-        style={styles.confirmDeleteBtn}
-        onPress={() => handleConfirmDelete(password)}
-      >
-        <Text style={styles.confirmDeleteText}>
-          {deleting ? 'Deleting...' : 'Confirm Deletion'}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
-        <Text style={styles.cancelModalText}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-)}
-  </View>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalBox}>
+          <Text style={styles.modalTitle}>Confirm Account Deletion</Text>
+          <Text style={styles.modalText}>Enter the code sent to your email</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Enter Code"
+          />
+          <TouchableOpacity
+            style={styles.confirmDeleteBtn}
+            onPress={() => handleConfirmDelete(password)}
+          >
+            <Text style={styles.confirmDeleteText}>
+              {deleting ? 'Deleting...' : 'Confirm Deletion'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
+            <Text style={styles.cancelModalText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )}
+  </ScrollView>
 );
   
 }
