@@ -1720,7 +1720,7 @@ PODS:
     - ReactCommon/turbomodule/core
   - react-native-safe-area-context (5.4.0):
     - React-Core
-  - react-native-webview (13.13.5):
+  - react-native-webview (13.15.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2698,7 +2698,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: c3f4b608e4a59dd2f6a416ef4d47a14400194468
   React-microtasksnativemodule: 054f34e9b82f02bd40f09cebd4083828b5b2beb6
   react-native-safe-area-context: 9d72abf6d8473da73033b597090a80b709c0b2f1
-  react-native-webview: 1b5778b306d4ed09d13829a6e7a6550e3c1a644a
+  react-native-webview: 0dceb35a9d050f5fa55f7fe2d8c4d1903651eb7d
   React-NativeModulesApple: 2c4377e139522c3d73f5df582e4f051a838ff25e
   React-oscompat: ef5df1c734f19b8003e149317d041b8ce1f7d29c
   React-perflogger: 9a151e0b4c933c9205fd648c246506a83f31395d

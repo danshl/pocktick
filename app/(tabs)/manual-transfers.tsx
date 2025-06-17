@@ -96,7 +96,8 @@ const onRefresh = async () => {
   setRefreshing(false);
 };
 
-const handleBuyTransfer = (transferId: number) => {
+const handleBuyTransfer = (externalTransferId: number) => {
+
   Alert.alert(
     'Buy Tickets',
     'Are you sure you want to complete this purchase?',
@@ -107,27 +108,34 @@ const handleBuyTransfer = (transferId: number) => {
         onPress: async () => {
           try {
             const token = await AsyncStorage.getItem('authToken');
-            const res = await fetch(
-              `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/buy/${transferId}`,
+            const response = await fetch(
+              `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/start-external-payment?externalTransferId=${externalTransferId}`,
               {
                 method: 'POST',
                 headers: {
                   Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
                 },
               }
             );
-
-            if (res.ok) {
-              Alert.alert('Success', 'Purchase confirmed.');
-              fetchExternalTransfers(); // מרענן את הרשימה
-            } else {
-              const errorText = await res.text();
-              Alert.alert('Error', errorText || 'Failed to complete purchase.');
-            }
-          } catch (err) {
-            console.error(err);
-            Alert.alert('Error', 'An error occurred.');
+          await AsyncStorage.setItem('lastTransactionId', externalTransferId.toString());
+          await AsyncStorage.setItem('IsInternal', "false");
+          
+          const json = await response.json();
+          console.log(json);
+          if (response.ok && json.success && json.payment_page_link) {
+            console.log(json.payment_page_link);
+            router.push({
+              pathname: '/payment',
+              params: { url: json.payment_page_link },
+            });
+          } else {
+            Alert.alert('Error', 'Could not initiate payment.');
           }
+        } catch (error) {
+          console.error('❌ Payment Error:', error);
+          Alert.alert('Error', 'Could not connect to server.');
+        }
         },
       },
     ]

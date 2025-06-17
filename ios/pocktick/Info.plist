@@ -23,6 +23,28 @@
     <key>CFBundleSignature</key>
     <string>????</string>
 
+<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsArbitraryLoads</key>
+  <false/>
+  <key>NSAllowsLocalNetworking</key>
+  <true/>
+  <key>NSExceptionDomains</key>
+  <dict>
+    <key>paymentsdev.payplus.co.il</key>
+    <dict>
+      <key>NSIncludesSubdomains</key>
+      <true/>
+      <key>NSExceptionAllowsInsecureHTTPLoads</key>
+      <true/>
+      <key>NSExceptionRequiresForwardSecrecy</key>
+      <false/>
+      <key>NSAllowsArbitraryLoads</key>
+      <true/>
+    </dict>
+  </dict>
+</dict>
+
     <!-- ✅ הוספה של כל ה־URL Schemes כולל Google -->
     <key>CFBundleURLTypes</key>
     <array>
@@ -67,13 +89,6 @@
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>We may save your selected avatar to your device.</string>
 
-    <key>NSAppTransportSecurity</key>
-    <dict>
-      <key>NSAllowsArbitraryLoads</key>
-      <false/>
-      <key>NSAllowsLocalNetworking</key>
-      <true/>
-    </dict>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

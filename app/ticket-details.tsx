@@ -26,13 +26,15 @@ import { useUserData } from './useUserData';
 import { fetchTickets } from './ticketService';
 import { ActivityIndicator } from 'react-native';
 import { Ticket } from './types';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function TicketDetailsScreen() {
   const router = useRouter();
   const { tickets: passedTickets } = useLocalSearchParams();
   const [flipped, setFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
-
+const [lastTransactionId, setLastTransactionId] = useState('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const { tickets, setTickets } = useUserData();
   const [qrModalVisible, setQrModalVisible] = useState(false);
@@ -129,7 +131,65 @@ const handleCancelOffer = async () => {
   }
 };
 
+
 const handleBuy = async () => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    if (!selectedTicket.transactionId) {
+      Alert.alert('Error', 'Missing transaction ID on ticket.');
+      return;
+    }
+    await AsyncStorage.setItem('lastTransactionId', selectedTicket.transactionId.toString());
+    await AsyncStorage.setItem('IsInternal', "true");
+
+    const response = await fetch(
+      `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/pay-plus/start-payment?transactionId=${selectedTicket.transactionId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    
+    const json = await response.json();
+
+    if (response.ok && json.success && json.payment_page_link) {
+      console.log(json.payment_page_link);
+      router.push({
+        pathname: '/payment',
+        params: { url: json.payment_page_link },
+      });
+    } else {
+      Alert.alert('Error', 'Could not initiate payment.');
+    }
+  } catch (error) {
+    console.error('❌ Payment Error:', error);
+    Alert.alert('Error', 'Could not connect to server.');
+  }
+};
+
+const handleBuy1 = async () => {
+  const token = await AsyncStorage.getItem('authToken');
+  const response = await fetch(`https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/pay-plus/start-payment?transactionId=${selectedTicket.transactionId}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const json = await response.json();
+
+  if (response.ok && json.success && json.payment_page_link) {
+    console.log('Opening Safari:', json.payment_page_link);
+    await WebBrowser.openBrowserAsync(json.payment_page_link); // ✅ Safari חיצוני
+  } else {
+    Alert.alert('Error', 'Could not initiate payment.');
+  }
+};
+const buyold = async () => {
   try {
     const token = await AsyncStorage.getItem('authToken');
     if (!selectedTicket.transactionId) {
@@ -215,7 +275,6 @@ const handleBuy = async () => {
   };
 
   if (!passedTickets) return <Text>Loading...</Text>;
-console.log("sssss");
   const parsedTickets: Ticket[] = JSON.parse(passedTickets as string);
   const [selectedTicketIndex, setSelectedTicketIndex] = useState(0);
   const selectedTicket = parsedTickets[selectedTicketIndex];
@@ -223,6 +282,7 @@ const selectedTickets = parsedTickets.filter(
   (ticket) => ticket.event.id === selectedTicket.event.id
 );
 
+console.log("dd",selectedTicket.transactionId);
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentWrapper} showsVerticalScrollIndicator={false}>
