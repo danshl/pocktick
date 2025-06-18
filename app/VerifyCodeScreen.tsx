@@ -1,15 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function VerifyCodeScreen() {
   const router = useRouter();
   const { email } = useLocalSearchParams();
-  const [code, setCode] = useState<string[]>(["", "", "", "", ""]);
+  const [code, setCode] = useState<string[]>(['', '', '', '', '']);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [attemptsLeft, setAttemptsLeft] = useState<number>(4);
   const [cooldown, setCooldown] = useState<number>(60);
   const inputsRef = useRef<(TextInput | null)[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -29,71 +37,76 @@ export default function VerifyCodeScreen() {
     }
   };
 
-  const handleVerifyCode = async () => {
-    const enteredCode = code.join("");
+const handleVerifyCode = async () => {
+  const enteredCode = code.join('');
+  setIsLoading(true); // התחלת טעינה
 
-    try {
-      const response = await fetch("https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/verify-reset-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+  try {
+    const response = await fetch(
+      'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/verify-reset-code',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: enteredCode }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setStatusMessage("Reset successful");
-        setAttemptsLeft(4);
-        router.push({
-          pathname: "/SetNewPasswordScreen",
-          params: { email, resetToken: result.resetToken },
-        });
-      } else {
-        const isAttemptsMsg = result.message?.toLowerCase().includes("too many");
-        if (isAttemptsMsg || attemptsLeft === 1) {
-          setStatusMessage("Too many failed attempts. Redirecting...");
-          setTimeout(() => router.replace("/login"), 2000);
-        } else {
-          setAttemptsLeft(prev => prev - 1);
-          setStatusMessage("Incorrect code");
-        }
       }
-    } catch (error) {
-      setStatusMessage("Error verifying code");
-      console.error("Error:", error);
+    );
+    const result = await response.json();
+    if (response.ok) {
+      setStatusMessage('Reset successful');
+      setAttemptsLeft(4);
+      router.push({
+        pathname: '/SetNewPasswordScreen',
+        params: { email, resetToken: result.resetToken },
+      });
+    } else {
+      const isAttemptsMsg = result.message?.toLowerCase().includes('too many');
+      if (isAttemptsMsg || attemptsLeft === 1) {
+        setStatusMessage('Too many failed attempts. Redirecting...');
+        setTimeout(() => router.replace('/login'), 2000);
+      } else {
+        setAttemptsLeft((prev) => prev - 1);
+        setStatusMessage('Incorrect code');
+      }
     }
-  };
+  } catch (error) {
+    setStatusMessage('Error verifying code');
+    console.error('Error:', error);
+  }
+
+  setIsLoading(false); // סיום טעינה
+};
+
 
   const handleResendCode = async () => {
     try {
-      const response = await fetch("https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
+      const response = await fetch(
+        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/forgot-password',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        }
+      );
       if (response.ok) {
         setCooldown(60);
-        setStatusMessage("A new code has been sent to your email.");
+        setStatusMessage('A new code has been sent to your email.');
       } else {
-        setStatusMessage("Failed to resend code. Please try again.");
+        setStatusMessage('Failed to resend code. Please try again.');
       }
     } catch (error) {
-      setStatusMessage("Server error while resending code.");
+      setStatusMessage('Server error while resending code.');
     }
   };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <View style={styles.backCircle}>
-          <Image source={require('../assets/icons/back-arrow.png')} style={styles.backIcon} />
-        </View>
+        <Image source={require('../assets/icons/prev_black.png')} style={styles.backIcon} />
       </TouchableOpacity>
 
       <Text style={styles.title}>Check your email</Text>
       <Text style={styles.subtitle}>
-        We sent a reset link to <Text style={styles.email}>{email}</Text>{"\n"}
+        We sent a reset link to <Text style={styles.email}>{email}</Text>{'\n'}
         Enter the 5-digit code mentioned in the email
       </Text>
 
@@ -101,7 +114,9 @@ export default function VerifyCodeScreen() {
         {code.map((digit, index) => (
           <TextInput
             key={index}
-            ref={(el) => { inputsRef.current[index] = el; }}
+            ref={(el) => {
+              inputsRef.current[index] = el;
+            }}
             style={styles.codeInput}
             keyboardType="number-pad"
             maxLength={1}
@@ -109,8 +124,8 @@ export default function VerifyCodeScreen() {
             onChangeText={(value) => handleInputChange(index, value)}
             onKeyPress={({ nativeEvent }) => {
               if (
-                nativeEvent.key === "Backspace" &&
-                code[index] === "" &&
+                nativeEvent.key === 'Backspace' &&
+                code[index] === '' &&
                 index > 0
               ) {
                 inputsRef.current[index - 1]?.focus();
@@ -120,28 +135,45 @@ export default function VerifyCodeScreen() {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyCode}>
-        <Text style={styles.verifyButtonText}>Verify Code</Text>
-      </TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.verifyButton, isLoading && { opacity: 0.7 }]}
+      onPress={handleVerifyCode}
+      disabled={isLoading}
+    >
+      <Text style={styles.verifyButtonText}>
+        {isLoading ? 'Verifying Your Code...' : 'Verify Email Code'}
+      </Text>
+
+      {!isLoading && (
+        <View style={styles.arrowCircle}>
+          <Image
+            source={require('../assets/icons/next_white.png')}
+            style={styles.arrowIcon}
+          />
+        </View>
+      )}
+    </TouchableOpacity>
+
+
 
       {statusMessage && (
         <Text
           style={[
             styles.statusMessage,
-            statusMessage === "Incorrect code" ? { color: "#1D2B64" } : {},
+            statusMessage === 'Incorrect code' ? { color: '#FF3B30', } : {},
           ]}
         >
           {statusMessage}
-          {attemptsLeft >= 0 && statusMessage === "Incorrect code"
-            ? `. ${attemptsLeft} attempt${attemptsLeft !== 1 ? "s" : ""} left.`
-            : ""}
+          {attemptsLeft >= 0 && statusMessage === 'Incorrect code'
+            ? `. ${attemptsLeft} attempt${attemptsLeft !== 1 ? 's' : ''} left.`
+            : ''}
         </Text>
       )}
 
       <Text style={styles.resendText}>
         {cooldown === 0 ? (
           <>
-            Didn't get the code?{" "}
+            Didn't get the code?{' '}
             <Text style={styles.resendLink} onPress={handleResendCode}>
               Resend email
             </Text>
@@ -158,40 +190,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 60,
     backgroundColor: '#fff',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 180,
   },
   backButton: {
     position: 'absolute',
-    top: 90,
+    top: 60,
     left: 20,
-    zIndex: 10,
-  },
-  backCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 25,
-    backgroundColor: '#E0E0E0',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   backIcon: {
-    width: 25,
-    height: 22,
-    tintColor: '#000',
+    width: 24,
+    height: 24,
+    tintColor: '#1D2B64',
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 5,
-    marginTop: 100,
+    color: '#000',
+    fontFamily: 'Poppins-Bold',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#888',
+    color: '#1D2B64',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    fontFamily: 'Poppins-Regular',
   },
   email: {
     fontWeight: 'bold',
@@ -199,7 +225,7 @@ const styles = StyleSheet.create({
   },
   codeContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   codeInput: {
@@ -207,36 +233,61 @@ const styles = StyleSheet.create({
     height: 50,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
+    borderRadius: 12,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: 20,
+    fontFamily: 'Poppins-Bold',
+    color: '#1D2B64',
     marginHorizontal: 5,
   },
   verifyButton: {
     backgroundColor: '#1D2B64',
-    height: 50,
-    borderRadius: 8,
+    height: 56,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    marginTop: 10,
   },
   verifyButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#fff',
+    fontFamily: 'Poppins-Bold',
+    fontSize: 16,
   },
   statusMessage: {
     marginTop: 10,
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    textAlign: 'center',
+    
   },
   resendText: {
-    marginTop: 10,
+    marginTop: 20,
     fontSize: 14,
     color: '#888',
     textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
   },
   resendLink: {
     color: '#1D2B64',
-    fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
+    textDecorationLine: 'underline',
   },
+arrowCircle: {
+  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  width: 28,
+  height: 28,
+  borderRadius: 14,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginLeft: 10,
+},
+
+arrowIcon: {
+  width: 14,
+  height: 14,
+  tintColor: '#1D2B64',
+},
+
 });

@@ -1,15 +1,252 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Image, Platform, StatusBar, Alert, ScrollView
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  ImageSourcePropType,
+  ScrollView,
+  Alert,
 } from 'react-native';
+import AppText from './AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import  useGoogleLogin from './GoogleSignIn';
-import { signInWithApple } from './AppleSignIn';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import useGoogleLogin from './GoogleSignIn';
 
-export default function AuthScreen() {
+// 🟡 קומפוננטות עזר
+
+const TitleBar2 = () => (
+  <View style={styles.titleBar}>
+  </View>
+);
+
+type Group33624Props = {
+  selectedTab: 'login' | 'signup';
+  onTabChange: (tab: 'login' | 'signup') => void;
+};
+
+const Group33624: React.FC<Group33624Props> = ({ selectedTab, onTabChange }) => (
+  <View style={styles.tabGroup33624}>
+    <TouchableOpacity
+      style={[styles.tabButton, selectedTab === 'login' && styles.activeTab]}
+      onPress={() => onTabChange('login')}
+    >
+      <Text style={[styles.tabText, selectedTab === 'login' && styles.activeTabText]}>Log In</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.tabButton, selectedTab === 'signup' && styles.activeTab]}
+      onPress={() => onTabChange('signup')}
+    >
+      <Text style={[styles.tabText, selectedTab === 'signup' && styles.activeTabText]}>Sign Up</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+type InputFieldProps = {
+  label: string;
+  placeholder: string;
+  icon: ImageSourcePropType;
+  secure?: boolean;
+  value: string;
+  onChangeText: (text: string) => void;
+  showPassword?: boolean;
+  onTogglePassword?: () => void;
+};
+
+
+const InputField: React.FC<InputFieldProps> = ({
+  label,
+  placeholder,
+  icon,
+  secure = false,
+  value,
+  onChangeText,
+  showPassword,
+  onTogglePassword,
+}) => (
+  <View style={styles.inputContainer}>
+    <View style={styles.labelRow}>
+      <Image source={icon} style={styles.labelIcon} />
+      <Text style={styles.inputLabel}>{label}</Text>
+    </View>
+    <View style={styles.inputBox}>
+      <TextInput
+        placeholder={placeholder}
+        placeholderTextColor="#999"
+        secureTextEntry={secure}
+        style={styles.input}
+        value={value}
+        onChangeText={onChangeText}
+      />
+      {onTogglePassword && (
+        <TouchableOpacity onPress={onTogglePassword}>
+          <Image
+            source={
+              showPassword
+                ? require('../assets/icons/eye-off.png') // החלף בהתאם לאייקון שלך
+                : require('../assets/icons/eye.png')
+            }
+            style={styles.inputRightIcon}
+          />
+        </TouchableOpacity>
+      )}
+    </View>
+  </View>
+);
+
+type Frame33377Props = {
+  selectedTab: 'login' | 'signup';
+  setSelectedTab: (tab: 'login' | 'signup') => void;
+  email: string;
+  setEmail: (val: string) => void;
+  password: string;
+  setPassword: (val: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (val: string) => void;
+  fullName: string;
+  setFullName: (val: string) => void;
+  phoneNumber: string;
+  setPhoneNumber: (val: string) => void;
+  isLoading: boolean;
+  handleLogin: () => void;
+  handleSignup: () => void;
+  signIn: () => void;
+  signInWithApple: () => void;
+  router: ReturnType<typeof useRouter>;
+  showLoginPassword: boolean;
+setShowLoginPassword: (val: boolean) => void;
+showSignupPassword: boolean;
+setShowSignupPassword: (val: boolean) => void;
+showSignupConfirmPassword: boolean;
+setShowSignupConfirmPassword: (val: boolean) => void;
+error: boolean;
+setError: (val: boolean) => void;
+
+
+};
+// 🟢 רכיב UI שהועבר מחוץ ל-LoginScreen
+const Frame33377: React.FC<Frame33377Props> = ({
+  selectedTab,
+  setSelectedTab,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  fullName,
+  setFullName,
+  phoneNumber,
+  setPhoneNumber,
+  isLoading,
+  handleLogin,
+  handleSignup,
+  signIn,
+  signInWithApple,
+  router,
+    showLoginPassword,
+  setShowLoginPassword,
+  showSignupPassword,
+  setShowSignupPassword,
+  showSignupConfirmPassword,
+  setShowSignupConfirmPassword,
+  error,
+  setError
+
+}) => (
+  <View style={styles.frameContent}>
+    <Group33624 selectedTab={selectedTab} onTabChange={setSelectedTab} />
+
+    {selectedTab === 'login' ? (
+      <>
+        <InputField
+          label=" Email"
+          placeholder="Enter your email"
+          icon={require('../assets/icons/mail.png')}
+          value={email}
+          onChangeText={setEmail}
+        />
+<InputField
+  label=" Password"
+  placeholder="Enter your password"
+  secure={!showLoginPassword}
+  icon={require('../assets/icons/lock.png')}
+  value={password}
+  onChangeText={setPassword}
+  showPassword={showLoginPassword}
+  onTogglePassword={() => setShowLoginPassword(!showLoginPassword)}
+/>
+
+<View style={styles.forgotAndErrorRow}>
+  <TouchableOpacity onPress={() => router.push('/ForgotPasswordScreen')}>
+    <AppText style={styles.forgotLink}>Forgot Password?</AppText>
+  </TouchableOpacity>
+
+  {error && (
+    <Text style={styles.errorText}>Invalid email or password</Text>
+  )}
+</View>
+
+<TouchableOpacity
+  style={[styles.continueButton, isLoading && { opacity: 0.6 }]}
+  onPress={handleLogin}
+  disabled={isLoading}
+>
+  <AppText style={styles.continueText}>
+    {isLoading ? 'Authenticating...' : 'Continue'}
+  </AppText>
+  <View style={styles.arrowCircle}>
+    <Image
+      source={require('../assets/icons/next_white.png')}
+      style={styles.arrowIcon}
+    />
+  </View>
+</TouchableOpacity>
+
+        <AppText style={styles.orText}>OR</AppText>
+        <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
+          <Image source={require('../assets/icons/apple.png')} style={styles.socialIcon} />
+          <AppText style={styles.socialText}>Login with Apple</AppText>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.socialButton} onPress={signIn}>
+          <Image source={require('../assets/icons/google.png')} style={styles.socialIcon} />
+          <AppText style={styles.socialText}>Login with Google</AppText>
+        </TouchableOpacity>
+        <AppText style={styles.bottomText}>
+          Don’t have an account? <AppText style={styles.link}>Sign up</AppText>
+        </AppText>
+      </>
+    ) : (
+      <>
+        <AppText style={[styles.createAccountTitle]}>Create an account</AppText>
+        <InputField label=" Full Name" placeholder="Enter your full name" icon={require('../assets/icons/user.png')} value={fullName} onChangeText={setFullName} />
+        <InputField label=" Phone Number" placeholder="Enter your phone number" icon={require('../assets/icons/telephone.png')} value={phoneNumber} onChangeText={setPhoneNumber} />
+        <InputField label=" Email" placeholder="Enter your email" icon={require('../assets/icons/mail.png')} value={email} onChangeText={setEmail} />
+        <InputField label=" Password" placeholder="Enter your password" secure={true} icon={require('../assets/icons/lock.png')} value={password} onChangeText={setPassword} />
+        <InputField label=" Confirm Password" placeholder="Confirm your password" secure={true} icon={require('../assets/icons/lock.png')} value={confirmPassword} onChangeText={setConfirmPassword} />
+        <TouchableOpacity style={styles.continueButton} onPress={handleSignup}>
+        <AppText style={styles.continueText}>Sign Up</AppText>
+        <View style={styles.arrowCircle}>
+            <Image
+            source={require('../assets/icons/next_white.png')}
+            style={styles.arrowIcon}
+            />
+        </View>
+        </TouchableOpacity>
+
+        <AppText style={styles.bottomText}>
+          Already have an account? <AppText style={styles.link}>Log Up</AppText>
+        </AppText>
+      </>
+    )}
+  </View>
+);
+
+// 🟡 הקומפוננטה הראשית
+export default function LoginScreen() {
   const [selectedTab, setSelectedTab] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,146 +255,57 @@ export default function AuthScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
 
   const router = useRouter();
+  const { signIn } = useGoogleLogin();
 
-  
-const { signIn } = useGoogleLogin();
-
-
-const signInWithApple = async () => {
-  try {
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-    });
-
-    const token = credential.identityToken;
-    const fullName = "Israel israeli"; 
-
-    if (!token) {
-    Alert.alert('Error', 'No token was received from Apple');
-      return;
-    }
-    console.log(token,fullName);
-    const response = await fetch(
-      'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login-with-apple',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: token,
-          fullName: fullName,
-        }),
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      Alert.alert('Error', result.message || 'Please try again later');
-      return;
-    }
-
-    await AsyncStorage.setItem('authToken', result.token);
-    await AsyncStorage.setItem('userEmail', result.email);
-    console.log(AsyncStorage.getAllKeys);
-    router.replace('/load-screen');
-  } catch (e: any) {
-    if (e.code === 'ERR_REQUEST_CANCELED') {
-      console.log('Canceled', 'The user canceled the sign-in with Apple');
-    } else {
-      Alert.alert('Sign-In Error', e.message || 'An unexpected error occurred');
-      console.error('Apple Sign-In Error:', e);
-    }
-  }
-  };
-
-  
-const handleLogin = async () => {
-  try {
-    setError(false);
-    setIsLoading(true); // התחל טעינה
-
-    const response = await fetch(
-      'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login',
-      {
+  const handleLogin = async () => {
+    try {
+      setError(false);
+      setIsLoading(true);
+      const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-      }
-    );
-
-    const result = await response.json();
-    console.log(result);
-
-    if (!response.ok) {
-      if (
-        response.status === 401 &&
-        result.message === 'Please verify your email before logging in.'
-      ) {
-        Alert.alert(
-          'Email Not Verified',
-          'Please verify your email to continue.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                router.push({
-                  pathname: '/VerifyEmailScreen',
-                  params: { email }
-                });
-              }
-            }
-          ]
-        );
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        if (response.status === 401 && result.message === 'Please verify your email before logging in.') {
+          Alert.alert('Email Not Verified', 'Please verify your email to continue.', [
+            { text: 'OK', onPress: () => router.push({ pathname: '/VerifyEmailScreen', params: { email } }) }
+          ]);
+          return;
+        }
+        if (response.status === 400 && result.message?.toLowerCase().includes('too many failed login attempts')) {
+          Alert.alert('Too Many Attempts', 'Please try again in 15 minutes.');
+          return;
+        }
+        setError(true);
         return;
       }
-      if (
-        response.status === 400 &&
-        result.message?.toLowerCase().includes('too many failed login attempts')
-      ) {
-        Alert.alert('Too Many Attempts', 'Please try again in 15 minutes.');
-        return;
-      }
-
+      await AsyncStorage.setItem('authToken', result.token);
+      await AsyncStorage.setItem('userEmail', email);
+      router.replace('/load-screen');
+    } catch (error) {
+      console.error('Login error:', error);
       setError(true);
-      return;
+    } finally {
+      setIsLoading(false);
     }
-    await AsyncStorage.setItem('authToken', result.token);
-    await AsyncStorage.setItem('userEmail', email);
-    console.log("s'seddd");
-    const token = result.token;
-    for (let i = 0; i < token.length; i += 100) {
-  console.log(token.slice(i, i + 100));
-}
-    console.log(result.token);
-    router.replace('/load-screen');
-
-  } catch (error) {
-    console.error('Login error:', error);
-    setError(true);
-  } finally {
-    setIsLoading(false); // סיים טעינה תמיד
-  }
-};
-
-  
-  
+  };
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword || !fullName) {
       alert('Please fill in all fields');
       return;
     }
-
     if (password !== confirmPassword) {
       alert("Passwords don't match");
       return;
     }
-
     try {
       const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/register', {
         method: 'POST',
@@ -174,311 +322,299 @@ const handleLogin = async () => {
         Alert.alert('Registration Failed', result.message);
         return;
       }
-
-      router.push({
-        pathname: "/VerifyEmailScreen",
-        params: { email }
-      });
+      router.push({ pathname: "/VerifyEmailScreen", params: { email } });
     } catch (error) {
       console.error(error);
       alert('An error occurred during registration.');
     }
   };
 
+  const signInWithApple = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      const token = credential.identityToken;
+      const fullName = 'Israel israeli';
+      if (!token) {
+        Alert.alert('Error', 'No token was received from Apple');
+        return;
+      }
+      const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/login-with-apple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: token, fullName }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        Alert.alert('Error', result.message || 'Please try again later');
+        return;
+      }
+      await AsyncStorage.setItem('authToken', result.token);
+      await AsyncStorage.setItem('userEmail', result.email);
+      router.replace('/load-screen');
+    } catch (e: any) {
+      if (e.code === 'ERR_REQUEST_CANCELED') {
+        console.log('Canceled Apple Sign-In');
+      } else {
+        Alert.alert('Sign-In Error', e.message || 'An unexpected error occurred');
+        console.error('Apple Sign-In Error:', e);
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.tabContainer}>
-        <TouchableOpacity onPress={() => setSelectedTab('login')} style={styles.tab}>
-          <Text style={[styles.tabText, selectedTab === 'login' && styles.activeText]}>Log in</Text>
-          {selectedTab === 'login' && <View style={styles.activeUnderline} />}
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setSelectedTab('signup')} style={styles.tab}>
-          <Text style={[styles.tabText, selectedTab === 'signup' && styles.activeText]}>Sign up</Text>
-          {selectedTab === 'signup' && <View style={styles.activeUnderline} />}
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.frameContainer}>
-          {selectedTab === 'login' ? (
-            <>
-              <Text style={styles.label}>Your Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={[styles.input, error && styles.inputError]}
-                placeholder="Enter your password"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
-              <View style={styles.passwordRow}>
-                {error ? <Text style={styles.errorText}>Invalid email or password</Text> : <View style={{ flex: 1 }} />}
-                <TouchableOpacity onPress={() => router.push('/ForgotPasswordScreen')}>
-                  <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity
-                style={[styles.continueButton, isLoading && { opacity: 0.6 }]}
-                onPress={handleLogin}
-                disabled={isLoading}
-              >
-                <Text style={styles.continueText}>
-                  {isLoading ? 'Checking credentials...' : 'Continue'}
-                </Text>
-              </TouchableOpacity>
-
-
-              <View style={styles.orContainer}>
-                <View style={styles.line} />
-                <Text style={styles.orText}>Or</Text>
-                <View style={styles.line} />
-              </View>
-
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
-                  <Image source={require('../assets/images/apple-logo.png')} style={styles.socialIcon} />
-                  <Text style={styles.socialText}>Login with Apple</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity style={styles.socialButton}  onPress={signIn}>
-                <Image source={require('../assets/images/google.png')} style={styles.socialIcon} />
-                <Text style={styles.socialText}>Login with Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => setSelectedTab('signup')}>
-                <Text style={styles.signupText}>
-                  Don't have an account? <Text style={styles.signupLink}>Sign up</Text>
-                </Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.title}>Create an Account</Text>
-              <Text style={styles.subtitle}>Join and enjoy a seamless experience! 🎉</Text>
-
-              <Text style={styles.label}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your full name"
-                autoCapitalize="words"
-                value={fullName}
-                onChangeText={setFullName}
-              />
-              <Text style={styles.label}>Phone Number</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your phone number"
-                keyboardType="phone-pad"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-              />
-              <Text style={styles.label}>Your Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
-              <Text style={styles.label}>Confirm Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm your password"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-              />
-              <TouchableOpacity style={styles.continueButton} onPress={handleSignup}>
-                <Text style={styles.continueText}>Sign Up</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedTab('login')}>
-                <Text style={styles.signupText}>
-                  Already have an account? <Text style={styles.signupLink}>Log in</Text>
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+      <TitleBar2 />
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <Frame33377
+          selectedTab={selectedTab}
+          setSelectedTab={setSelectedTab}
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          fullName={fullName}
+          setFullName={setFullName}
+          phoneNumber={phoneNumber}
+          setPhoneNumber={setPhoneNumber}
+          isLoading={isLoading}
+          handleLogin={handleLogin}
+          handleSignup={handleSignup}
+          signIn={signIn}
+          signInWithApple={signInWithApple}
+          router={router}
+          showLoginPassword={showLoginPassword}
+          setShowLoginPassword={setShowLoginPassword}
+          showSignupPassword={showSignupPassword}
+          setShowSignupPassword={setShowSignupPassword}
+          showSignupConfirmPassword={showSignupConfirmPassword}
+          setShowSignupConfirmPassword={setShowSignupConfirmPassword}
+          error={error}
+          setError={setError}
+        />
       </ScrollView>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
     backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) - 20 : 60,
+    fontFamily: 'Poppins-Regular',
   },
-  tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignSelf: 'stretch',
-    marginTop: 20,
+  titleBar: {
+    height: 80,
+    width: 375,
+    justifyContent: 'center',
+    paddingLeft: 24,
   },
-  tab: {
-    flex: 1,
+  backButton: {
+    width: 22,
+    height: 22,
+  },
+  backIcon: {
+    width: 22,
+    height: 22,
+    tintColor: '#1D2B64',
+    top: 38,
+  },
+  frameContent: {
+    paddingHorizontal: 20,
+    gap: 20,
     alignItems: 'center',
-    paddingVertical: 15,
+  },
+  tabGroup33624: {
+    width: 295,
+    height: 45,
+    backgroundColor: '#E9EDFF',
+    borderRadius: 100,
+    flexDirection: 'row',
+    padding: 5,
+  },
+  tabButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 100,
   },
   tabText: {
-    fontSize: 18,
-    color: '#888',
-  },
-  activeText: {
+    fontSize: 14,
     color: '#1D2B64',
+  },
+  activeTab: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activeTabText: {
     fontWeight: 'bold',
   },
-  activeUnderline: {
-    width: 150,
-    height: 2,
-    backgroundColor: '#1D2B64',
-    marginTop: 4,
-  },
-  scrollView: {
+  inputContainer: {
     width: '100%',
   },
-  scrollContent: {
-    paddingBottom: 40,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  frameContainer: {
-    marginTop: 20,
-    padding: 20,
-    width: '90%',
-    backgroundColor: '#fff',
+  inputBox: {
+    width: '100%',
+    height: 56,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
   },
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
+  inputLabel: {
+    fontSize: 15,
+    color: '#1D2B64',
+    fontFamily: 'Poppins-Regular',
   },
   input: {
-    borderWidth: 1,
-    height: 55,
-    borderColor: '#ddd',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
-    width: '100%',
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    fontFamily: 'Poppins-Regular',
   },
-  inputError: {
-    borderColor: 'red',
+  inputIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 8,
+    tintColor: '#1D2B64',
   },
-  passwordRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 15,
+  inputRightIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#1D2B64',
   },
-  errorText: {
-    color: 'red',
-    fontSize: 14,
-
+  forgotPassword: {
+    alignSelf: 'flex-end',
   },
-  forgotPasswordText: {
-    color: '#1D2B64',
-    fontSize: 14,
-    fontWeight: 'bold',
+    link: {
+    color: '#3366FF',
+    textDecorationLine: 'underline',
   },
   continueButton: {
-    backgroundColor: '#1D2B64',
-    height: 55,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  continueText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  orContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 30,
+    justifyContent: 'center',
+    backgroundColor: '#1B2B68',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     width: '100%',
   },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ddd',
+continueText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 16,
+  fontFamily: 'Poppins-Bold',
+  marginRight: 10, // מוסיף רווח לפני החץ
+},
+
+arrowCircle: {
+  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+arrowIcon: {
+  width: 16,
+  height: 16,
+  tintColor: '#fff',
+},
+
+  arrowRight: {
+    width: 18,
+    height: 18,
+    tintColor: '#fff',
   },
   orText: {
-    marginHorizontal: 10,
+    marginVertical: 10,
     fontSize: 14,
-    color: '#888',
-    alignItems: 'center',
+    color: '#1D2B64',
   },
   socialButton: {
-    width: '100%',
-    height: 55,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    marginVertical: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 10,
+    width: 335,
+    height: 56,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  createAccountTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 10,
+    color: '#1D2B64',
+    fontFamily: 'Poppins-Bold',
+    alignSelf: 'center',
   },
   socialIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
+    width: 28,
+    height: 28,
+    marginRight: 12,
+    resizeMode: 'contain',
   },
   socialText: {
     fontSize: 16,
-    color: '#333',
-  },
-  signupText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-  },
-  signupLink: {
     color: '#1D2B64',
-    fontWeight: 'bold',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  bottomText: {
+    fontSize: 14,
+    marginTop: 20,
+    color: '#1D2B64',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 5,
-    color: '#333',
-    top: -10,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-    top: -10,
+  scrollContainer: {
+    paddingBottom: 50,
   },
+  labelIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 6,
+    tintColor: '#1D2B64',
+  },
+forgotAndErrorRow: {
+  flexDirection: 'row-reverse',
+  justifyContent: 'space-between',
+  width: '100%',
+  marginBottom: 10,
+},
+
+forgotLink: {
+  color: '#1D2B64',
+  textDecorationLine: 'underline',
+  fontFamily: 'Poppins-Regular',
+  fontSize: 14,
+},
+
+errorText: {
+  color: '#FF3B30',
+  fontSize: 14,
+  fontFamily: 'Poppins-Regular',
+  textAlign: 'left',
+},
 });

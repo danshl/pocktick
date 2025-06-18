@@ -9,12 +9,13 @@ import {
   Switch,
   Alert,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { ScrollView } from 'react-native';
+import { Modal } from 'react-native';
 
 type UserProfile = {
   fullName: string;
@@ -23,436 +24,327 @@ type UserProfile = {
   createdAt: string;
   ticketCount: number;
 };
-
 export default function SettingsScreen() {
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState(true);
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [password, setPassword] = useState('');
+  const [deleteCode, setDeleteCode] = useState('');
   const [deleting, setDeleting] = useState(false);
+
   const fetchUserProfile = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      if (!token) throw new Error('No auth token found');
-
-      const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/profile', {
+      const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/profile', {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!response.ok) throw new Error('Failed to fetch profile');
-      const data = await response.json();
+      const data = await res.json();
       setProfile(data);
     } catch (err) {
-      console.error('Error fetching user profile:', err);
-      setError('Something went wrong.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-const handleConfirmDelete = async (code: string) => {
-  try {
-    const token = await AsyncStorage.getItem('authToken');
+  useFocusEffect(useCallback(() => {
+    fetchUserProfile();
 
-    const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/confirm-delete', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+  }, []));
+
+  const handleDeletePress = () => {
+  Alert.alert(
+    'Delete Account',
+    'Are you sure you want to delete your account? This action is irreversible.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Yes',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem('authToken');
+            const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/request-delete', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+              setShowDeleteModal(true);
+            } else {
+              Alert.alert('Error', data.message || 'Failed to request deletion.');
+            }
+          } catch (err) {
+            console.error(err);
+            Alert.alert('Error', 'Something went wrong.');
+          }
+        },
       },
-      body: JSON.stringify({ code }),
-    });
-
-    if (!response.ok) {
-      // קרא את התגובה רק פעם אחת
-      let message = 'Failed to delete account.';
-      try {
-        const error = await response.json();
-        message = error?.message || message;
-      } catch (e) {
-        console.warn('Could not parse error response');
-      }
-      Alert.alert('Error', message);
-      return;
-    }
-
-    await AsyncStorage.clear();
-    router.replace('/login');
-  } catch (error) {
-    console.error('Error confirming account deletion:', error);
-    Alert.alert('Error', 'Something went wrong.');
-  }
+    ]
+  );
 };
 
-  const isImageAvailable = async (url: string): Promise<boolean> => {
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      return response.ok;
-    } catch (error) {
-      console.warn('HEAD request failed:', error);
-      return false;
-    }
-  };
-
-  const fetchAvatarUri = async () => {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        setAvatarUri(null);
-        return;
-      }
-
-      const response = await fetch(
-        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/avatar-url',
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (!response.ok) {
-        setAvatarUri(null);
-        return;
-      }
-
-      const { avatarUrl } = await response.json();
-
-      if (
-        avatarUrl &&
-        typeof avatarUrl === 'string' &&
-        avatarUrl.startsWith('http') &&
-        await isImageAvailable(avatarUrl)
-      ) {
-        setAvatarUri(`${avatarUrl}?t=${Date.now()}`);
-      } else {
-        setAvatarUri(null);
-      }
-
-    } catch (err) {
-      console.warn('Failed to fetch avatar URL:', err);
-      setAvatarUri(null);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      const load = async () => {
-        setLoading(true);
-        await fetchUserProfile();
-        await fetchAvatarUri();
-      };
-      load();
-    }, [])
-  );
-
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('authToken');
-    await AsyncStorage.removeItem('userEmail');
+    await AsyncStorage.clear();
     router.replace('/login');
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" color="#5787E2" style={styles.loader} />;
-  }
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/confirm-delete', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: deleteCode }),
+      });
+      if (res.ok) {
+        await AsyncStorage.clear();
+        router.replace('/login');
+      } else {
+        const err = await res.json();
+        Alert.alert('Error', err.message || 'Failed to delete.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
-  if (error || !profile) {
-    return <Text style={styles.errorText}>{error || "Failed to load profile."}</Text>;
-  }
- 
-return (
-  <ScrollView
-    style={styles.container}
-    contentContainerStyle={{ paddingBottom: 40 }}
-    showsVerticalScrollIndicator={false}
-  >
-    <Text style={styles.title}>Profile</Text>
+  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 60 }} />;
 
-    <View style={styles.profileHeader}>
-      <Image
-        source={
-          avatarUri
-            ? { uri: avatarUri }
-            : require('../../assets/icons/user.png')
-        }
-        style={styles.avatar}
-      />
-      <View>
-        <Text style={styles.welcomeText}>Welcome</Text>
-        <Text style={styles.profileName}>{profile.fullName}</Text>
-      </View>
-      <Feather name="log-out" size={24} color="#FF3B30" style={styles.logoutIcon} onPress={handleLogout} />
-    </View>
+  return (
+    <ScrollView
+  style={styles.container}
+  contentContainerStyle={{ paddingBottom: 40, paddingTop: 75 }}
+>
+      <Text style={styles.title}>Profile</Text>
 
-    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('../user-profile')}>
-      <View style={styles.settingRow}>
-        <Ionicons name="person-outline" size={24} color="#333" />
-        <Text style={styles.settingText}>User Profile</Text>
-      </View>
-      <Feather name="chevron-right" size={20} color="#888" />
-    </TouchableOpacity>
-
-    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/change-password')}>
-      <View style={styles.settingRow}>
-        <Feather name="lock" size={24} color="#333" />
-        <Text style={styles.settingText}>Change Password</Text>
-      </View>
-      <Feather name="chevron-right" size={20} color="#888" />
-    </TouchableOpacity>
-
-    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/faqs')}>
-      <View style={styles.settingRow}>
-        <Feather name="help-circle" size={24} color="#333" />
-        <Text style={styles.settingText}>FAQs</Text>
-      </View>
-      <Feather name="chevron-right" size={20} color="#888" />
-    </TouchableOpacity>
-
-    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/verify-seller')}>
-      <View style={styles.settingRow}>
-        <Feather name="check-circle" size={24} color="#333" />
-        <Text style={styles.settingText}>Seller Verification</Text>
-      </View>
-      <Feather name="chevron-right" size={20} color="#888" />
-    </TouchableOpacity>
-
-    <View style={styles.settingItem}>
-      <View style={styles.settingRow}>
-        <Feather name="bell" size={24} color="#333" />
-        <Text style={styles.settingText}>Push Notification</Text>
-      </View>
-      <Switch value={notifications} onValueChange={() => setNotifications(!notifications)} />
-    </View>
-
-    <TouchableOpacity
-      style={styles.deleteButton}
-      onPress={async () => {
-        Alert.alert(
-          "Are you sure?",
-          "This will permanently delete your account.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Yes, Delete",
-              style: "destructive",
-              onPress: async () => {
-                try {
-                  const token = await AsyncStorage.getItem('authToken');
-                  const response = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/request-delete', {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
-
-                  if (!response.ok) {
-                    const error = await response.json();
-                    Alert.alert("Error", error.message || "Failed to request deletion code.");
-                    return;
-                  }
-
-                  Alert.alert("Code Sent", "A verification code was sent to your email.");
-                  setShowDeleteModal(true);
-                } catch (err) {
-                  console.error("Error requesting deletion code:", err);
-                  Alert.alert("Error", "Something went wrong while requesting the code.");
-                }
-              },
-            }
-          ]
-        );
-      }}
-    >
-      <View style={styles.deleteContent}>
-        <Text style={styles.deleteText}>Delete My Account</Text>
-      </View>
-    </TouchableOpacity>
-
-    {showDeleteModal && (
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalBox}>
-          <Text style={styles.modalTitle}>Confirm Account Deletion</Text>
-          <Text style={styles.modalText}>Enter the code sent to your email</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Enter Code"
-          />
-          <TouchableOpacity
-            style={styles.confirmDeleteBtn}
-            onPress={() => handleConfirmDelete(password)}
-          >
-            <Text style={styles.confirmDeleteText}>
-              {deleting ? 'Deleting...' : 'Confirm Deletion'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
-            <Text style={styles.cancelModalText}>Cancel</Text>
-          </TouchableOpacity>
+      <View style={styles.profileCard}>
+        <Image
+          source={require('../../assets/icons/account.png')}
+          style={styles.avatar}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.welcomeText}>Welcome</Text>
+          <Text style={styles.profileName}>{profile?.fullName || 'User'}</Text>
         </View>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+          <Image source={require('../../assets/icons/logout.png')} style={styles.logoutIcon} />
+        </TouchableOpacity>
       </View>
-    )}
-  </ScrollView>
-);
-  
+
+      <SettingRow icon="person-outline" text="User Profile" onPress={() => router.push('/user-profile')} />
+      <SettingRow icon="lock-closed-outline" text="Change Password" onPress={() => router.push('/change-password')} />
+      <SettingRow icon="help-circle-outline" text="FAQs" onPress={() => router.push('/faqs')} />
+      <SettingRow icon="checkmark-done-circle-outline" text="Seller Verification" onPress={() => router.push('/verify-seller')} />
+
+      <View style={styles.settingRowContainer}>
+        <View style={styles.rowLeft}>
+          <Image source={require('../../assets/icons/notification.png')} style={styles.iconImage} />
+          <Text style={styles.rowText}>Push Notification</Text>
+        </View>
+        <Switch value={notifications} onValueChange={setNotifications} trackColor={{ false: '#ccc', true: '#1D2B64' }} thumbColor="#fff" />
+      </View>
+
+      <TouchableOpacity onPress={handleDeletePress}>
+        <Text style={styles.deleteText}>Delete My Account</Text>
+      </TouchableOpacity>
+
+<Modal
+  transparent
+  animationType="fade"
+  visible={showDeleteModal}
+  onRequestClose={() => setShowDeleteModal(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalBox}>
+      <Text style={styles.modalTitle}>Confirm Deletion</Text>
+      <Text style={styles.infoText}>
+        A verification code has been sent to your email. Please enter it below to confirm account deletion.
+      </Text>
+      <TextInput
+        placeholder="Enter code"
+        style={styles.input}
+        value={deleteCode}
+        onChangeText={setDeleteCode}
+      />
+      <TouchableOpacity onPress={handleConfirmDelete} style={styles.confirmDeleteBtn}>
+        <Text style={styles.confirmDeleteText}>
+          {deleting ? 'Deleting...' : 'Confirm Deletion'}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
+        <Text style={styles.cancelModalText}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+    </ScrollView>
+  );
+}
+
+function SettingRow({ icon, text, onPress }: { icon: any; text: string; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={styles.settingRowContainer} onPress={onPress}>
+      <View style={styles.rowLeft}>
+        <Ionicons name={icon} size={22} color="#1D2B64" />
+        <Text style={styles.rowText}>{text}</Text>
+      </View>
+      <Feather name="chevron-right" size={20} color="#1D2B64" />
+    </TouchableOpacity>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9FB',
+    backgroundColor: '#fff',
     padding: 20,
   },
   title: {
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 20,
-    marginTop: 50,
+    fontFamily: 'Poppins-Bold',
+    marginBottom: 24,
   },
-  profileHeader: {
+  profileCard: {
     flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginRight: 15,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 16,
   },
   welcomeText: {
     fontSize: 14,
     color: '#888',
+    fontFamily: 'Poppins-Regular',
   },
   profileName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#000',
+    fontFamily: 'Poppins-Regular',
+  },
+  logoutBtn: {
+    padding: 6,
   },
   logoutIcon: {
-    marginLeft: 'auto',
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
   },
-  settingItem: {
+settingRowContainer: {
+  backgroundColor: '#fff',
+  borderRadius: 16,
+  padding: 16,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 12,
+
+  // הוספה של פס דק:
+  borderWidth: 0.5,
+  borderColor: '#E0E0E0', // או כל צבע שתרצה, אפור בהיר מומלץ
+},
+  rowLeft: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    height: 60,
-  },
-  settingRow: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
-  settingText: {
-    fontSize: 16,
+  rowText: {
     marginLeft: 12,
-    color: '#333',
+    fontSize: 16,
+    color: '#1D2B64',
+    fontFamily: 'Poppins-Regular',
   },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 20,
+  iconImage: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
   },
-  loader: {
-    marginTop: 50,
-  },
+deleteText: {
+  color: '#FF3B30',
+  fontFamily: 'Poppins-Regular',
+  marginTop: 10,
+  marginLeft: 4,
+  fontSize: 14,
+  textDecorationLine: 'underline',
+  alignSelf: 'flex-start',
+},
 modalOverlay: {
-  position: 'absolute',
-  top: 0, left: 0, right: 0, bottom: 0,
+  flex: 1,
   backgroundColor: 'rgba(0,0,0,0.5)',
   justifyContent: 'center',
   alignItems: 'center',
-  zIndex: 10,
 },
-
-modalBox: {
-  width: '85%',
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  padding: 20,
-  alignItems: 'center',
-},
-
-modalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  marginBottom: 10,
-},
-
-modalText: {
+  modalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    fontFamily: 'Poppins-Bold',
+  },
+  input: {
+    width: '100%',
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    fontFamily: 'Poppins-Regular',
+  },
+  confirmDeleteBtn: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  confirmDeleteText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontFamily: 'Poppins-Bold',
+  },
+  cancelModalText: {
+    marginTop: 10,
+    color: '#888',
+    textDecorationLine: 'underline',
+    fontFamily: 'Poppins-Regular',
+  },
+  infoText: {
   fontSize: 14,
-  marginBottom: 15,
+  color: '#333',
   textAlign: 'center',
-},
-
-confirmDeleteBtn: {
-  backgroundColor: '#FF3B30',
-  paddingVertical: 12,
-  paddingHorizontal: 30,
-  borderRadius: 8,
-  marginTop: 10,
-  width: '100%',
-  alignItems: 'center',
-},
-
-confirmDeleteText: {
-  color: '#fff',
-  fontWeight: 'bold',
-},
-
-cancelModalText: {
-  color: '#888',
-  marginTop: 15,
-  textDecorationLine: 'underline',
-},
-input: {
-  width: '100%',
-  height: 50,
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 8,
-  paddingHorizontal: 12,
-  marginBottom: 15,
-  backgroundColor: '#fff',
-},
-deleteButton: {
-  backgroundColor: '#fff',
-  padding: 15,
-  borderRadius: 12,
-  marginTop: 30,
-  borderWidth: 1,
-  borderColor: '#FF3B30',
-  height: 60,
-  justifyContent: 'center',
-},
-
-deleteContent: {
-  justifyContent: 'center',
-  alignItems: 'center',
-  position: 'relative',
-  height: '100%',
-},
-
-deleteText: {
-  fontSize: 16,
-  color: '#FF3B30',
-  fontWeight: 'bold',
-  textAlign: 'center',
+  marginBottom: 16,
+  fontFamily: 'Poppins-Regular',
+  paddingHorizontal: 6,
 },
 });

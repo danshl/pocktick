@@ -40,8 +40,9 @@ export default function ForgotPasswordScreen() {
         );
         router.push({ pathname: '/VerifyCodeScreen', params: { email } });
       } else {
-        setErrorMessage('We couldn’t find an account with this email address. Please make sure it’s correct or try a different one.');
-
+        setErrorMessage(
+          'We couldn’t find an account with this email address. Please make sure it’s correct or try a different one.'
+        );
       }
     } catch (error) {
       setErrorMessage('Something went wrong. Please try again later.');
@@ -51,34 +52,41 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Back arrow */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <View style={styles.backCircle}>
-          <Image
-            source={require('../assets/icons/back-arrow.png')}
-            style={styles.backIcon}
-          />
-        </View>
+      {/* Back button */}
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Image
+          source={require('../assets/icons/arrow-left.png')}
+          style={styles.backIcon}
+        />
       </TouchableOpacity>
 
-      {/* Title and subtitle */}
+      {/* Title */}
       <Text style={styles.title}>Forgot password</Text>
       <Text style={styles.subtitle}>
-        Please enter your email to reset the password
+        Please enter your email to reset your password
       </Text>
 
-      {/* Email input field */}
-      <Text style={styles.label}>Your Email</Text>
+      {/* Email label with icon */}
+      <View style={styles.labelContainer}>
+        <Image
+          source={require('../assets/icons/mail.png')}
+          style={styles.labelIcon}
+        />
+        <Text style={styles.label}>Email</Text>
+      </View>
+
+      {/* Email input */}
       <TextInput
         style={styles.input}
         placeholder="Enter your email"
+        placeholderTextColor="#999"
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
       />
 
-      {/* Reset password button */}
+      {/* Button */}
       <TouchableOpacity
         style={[
           styles.resetButton,
@@ -88,13 +96,19 @@ export default function ForgotPasswordScreen() {
         disabled={!email || loading}
       >
         <Text style={styles.resetButtonText}>
-          {loading ? 'Sending...' : 'Reset Password'}
+          {loading ? 'Sending...' : 'Reset password'}
         </Text>
+        <View style={styles.arrowCircle}>
+          <Image
+            source={require('../assets/icons/next_white.png')}
+            style={styles.arrowIcon}
+          />
+        </View>
       </TouchableOpacity>
 
-      {/* Error message under the button */}
+      {/* Error text */}
       {errorMessage ? (
-        <Text style={styles.errorTextBelowButton}>{errorMessage}</Text>
+        <Text style={styles.errorText}>{errorMessage}</Text>
       ) : null}
     </View>
   );
@@ -103,76 +117,101 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 60,
     backgroundColor: '#fff',
   },
   backButton: {
-    position: 'absolute',
-    top: 90,
-    left: 20,
-    zIndex: 10,
-  },
-  backCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 25,
-    backgroundColor: '#E0E0E0',
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 30,
   },
   backIcon: {
-    width: 25,
+    width: 22,
     height: 22,
-    tintColor: '#000',
+    tintColor: '#1D2B64',
+      left:10,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 5,
-    top: 100,
+    color: '#000',
+    fontFamily: 'Poppins-Bold',
+    textAlign: 'center',
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: '#888',
-    marginBottom: 20,
-    top: 110,
+    color: '#1D2B64',
+    fontFamily: 'Poppins-Regular',
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  labelIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 8,
+    tintColor: '#1D2B64',
   },
   label: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 5,
-    top: 120,
+    color: '#1D2B64',
+    fontFamily: 'Poppins-Regular',
   },
   input: {
+    height: 50,
+    borderColor: '#E1E1E1',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    height: 50,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    top: 120,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    marginBottom: 28,
+    backgroundColor: '#fff',
+    fontSize: 16,
+    color: '#000',
+    fontFamily: 'Poppins-Regular',
   },
-  resetButton: {
-    backgroundColor: '#1D2B64',
-    height: 50,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    top: 130,
-  },
+resetButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center', // ✅ הכל מיושר לאמצע
+  backgroundColor: '#1D2B64',
+  height: 56,
+  paddingHorizontal: 20,
+  borderRadius: 16,
+  gap: 10, // מרווח בין הטקסט לחץ (רק אם תומך ב־React Native שלך)
+},
+
   resetButtonText: {
-    color: 'white',
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Bold',
+  },
+  arrowCircle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arrowIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#fff',
   },
   disabledButton: {
-    backgroundColor: 'rgba(29, 43, 100, 0.4)',
+    opacity: 0.5,
   },
-  errorTextBelowButton: {
+  errorText: {
+    marginTop: 20,
     color: 'red',
     fontSize: 13,
-    marginTop: 12,
     textAlign: 'center',
-    top: 130,
+    fontFamily: 'Poppins-Regular',
   },
 });

@@ -1,17 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { useRouter } from 'expo-router';
+
 export default function AboutUsScreen() {
+  const router = useRouter();
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-         
-<View style={styles.headerImageContainer}>
-  <Image
-    source={require('../../assets/images/name.png')} // או URI חיצוני
-    style={styles.headerImage}
-    resizeMode="contain"
-  />
-</View>
+      <View style={styles.headerImageContainer}>
+        <Image
+          source={require('../../assets/images/name.png')}
+          style={styles.headerImage}
+          resizeMode="contain"
+        />
+      </View>
 
       <Text style={styles.sectionTitle}>Your Smart & Secure Ticket Wallet</Text>
       <Text style={styles.paragraph}>
@@ -44,6 +46,14 @@ export default function AboutUsScreen() {
           Contact us at <Text style={styles.email}>support@pocktick.com</Text>
         </Text>
       </View>
+
+      {/* ✅ כפתור */}
+      <TouchableOpacity style={styles.ctaButton} onPress={() => router.push('/my-tickets')}>
+        <Text style={styles.ctaText}>My Tickets</Text>
+        <View style={styles.arrowCircle}>
+          <Image source={require('../../assets/icons/next_white.png')} style={styles.arrowIcon} />
+        </View>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -58,23 +68,27 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     paddingBottom: 100,
   },
-   title: {
-    fontSize: 25,
-    fontWeight: 'bold',
+  headerImageContainer: {
+    alignItems: 'center',
     marginBottom: 20,
-    marginTop: 0,
+  },
+  headerImage: {
+    width: 180,
+    height: 60,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#2D2D2D',
     marginBottom: 8,
-    marginTop: 28,
+    marginTop: 15,
+    fontFamily: 'Poppins-Bold',
   },
   paragraph: {
     fontSize: 15,
     color: '#444',
     lineHeight: 24,
+    fontFamily: 'Poppins-Regular',
   },
   bold: {
     fontWeight: 'bold',
@@ -82,7 +96,7 @@ const styles = StyleSheet.create({
   },
   contactContainer: {
     marginTop: 60,
-    marginBottom: 80,
+    marginBottom: 20,
     alignItems: 'center',
   },
   questions: {
@@ -90,23 +104,50 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1D2B64',
     marginBottom: 8,
+    fontFamily: 'Poppins-Bold',
   },
   contact: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
     paddingHorizontal: 20,
+    fontFamily: 'Poppins-Regular',
   },
   email: {
     color: '#1D2B64',
     fontWeight: '600',
   },
-  headerImageContainer: {
-  alignItems: 'center',
-  marginBottom: 20,
-},
-headerImage: {
-  width: 180,
-  height: 60,
-},
+
+  ctaButton: {
+    flexDirection: 'row',
+    backgroundColor: '#1D2B64',
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#1D2B64',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    marginBottom: 40,
+  },
+  ctaText: {
+    color: '#fff',
+    fontSize: 17,
+    fontFamily: 'Poppins-Bold',
+  },
+  arrowCircle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 999,
+    padding: 10,
+    marginLeft: 16,
+  },
+  arrowIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#fff',
+  },
 });

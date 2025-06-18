@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   Alert,
+  Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,6 +17,10 @@ export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [secureCurrent, setSecureCurrent] = useState(true);
+  const [secureNew, setSecureNew] = useState(true);
+
 
   const handlePasswordChange = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -30,8 +35,6 @@ export default function ChangePasswordScreen() {
 
     try {
       const token = await AsyncStorage.getItem('authToken');
-      console.log('Sending password change request');
-
       const response = await fetch(
         'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/change-password',
         {
@@ -63,50 +66,112 @@ export default function ChangePasswordScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <View style={styles.backCircle}>
-          <Image
-            source={{
-              uri: 'https://tickectexchange.blob.core.windows.net/ui-assets/back-arrow.png',
-            }}
-            style={styles.backIcon}
-          />
-        </View>
-      </TouchableOpacity>
+<TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+  <Image
+    source={require('../assets/icons/arrow-left.png')}
+    style={styles.backIcon}
+  />
+</TouchableOpacity>
 
       <Text style={styles.title}>Change Password</Text>
 
-      <Text style={styles.label}>Current Password</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your current password"
-        secureTextEntry
+      <LabelledInput
+        label="Password"
         value={currentPassword}
         onChangeText={setCurrentPassword}
+        secureTextEntry={secureCurrent}
+        toggleSecure={() => setSecureCurrent(!secureCurrent)}
       />
 
-      <Text style={styles.label}>New Password</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your new password"
-        secureTextEntry
+      <LabelledInput
+        label="New Password"
         value={newPassword}
         onChangeText={setNewPassword}
+        secureTextEntry={secureNew}
+        toggleSecure={() => setSecureNew(!secureNew)}
       />
 
-      <Text style={styles.label}>Repeat New Password</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Re-enter new password"
-        secureTextEntry
+      <LabelledInput
+        label="Repeat New Password"
         value={confirmPassword}
         onChangeText={setConfirmPassword}
+        secureTextEntry={secureNew}
+        toggleSecure={() => setSecureNew(!secureNew)}
       />
 
-      <TouchableOpacity style={styles.confirmButton} onPress={handlePasswordChange}>
-        <Text style={styles.confirmButtonText}>Confirm</Text>
+      <View style={styles.rowBetween}>
+        <View style={styles.rowStart}>
+          <Switch
+            value={rememberMe}
+            onValueChange={setRememberMe}
+            trackColor={{ false: '#ccc', true: '#1D2B64' }}
+            thumbColor="#fff"
+          />
+          <Text style={styles.rememberText}>Remember Me</Text>
+        </View>
+      <TouchableOpacity onPress={() => router.push('/ForgotPasswordScreen')}>
+        <Text style={styles.forgotText}>Forgot Password?</Text>
       </TouchableOpacity>
+      </View>
+
+<TouchableOpacity style={styles.confirmButton} onPress={handlePasswordChange}>
+  {/* Spacer שקוף משמאל */}
+  <View style={styles.arrowSpacer} />
+
+  {/* טקסט באמצע */}
+  <Text style={styles.confirmText}>Confirm</Text>
+
+  {/* חץ בעיגול מימין */}
+  <View style={styles.arrowCircle}>
+    <Image
+      source={require('../assets/icons/next_white.png')}
+      style={styles.arrowIconImage}
+    />
+  </View>
+</TouchableOpacity>
+    </View>
+  );
+}
+
+type LabelledInputProps = {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  secureTextEntry: boolean;
+  toggleSecure: () => void;
+};
+
+function LabelledInput({
+  label,
+  value,
+  onChangeText,
+  secureTextEntry,
+  toggleSecure,
+}: LabelledInputProps) {
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <View style={styles.labelRow}>
+              <Image source={require('../assets/icons/lock.png')} style={styles.iconLabel} />
+        <Text style={styles.inputLabel}>{label}</Text>
+      </View>
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={secureTextEntry}
+        />
+        <TouchableOpacity onPress={toggleSecure}>
+          <Image
+            source={
+              secureTextEntry
+                ? require('../assets/icons/eye-off.png')
+                : require('../assets/icons/eye.png')
+            }
+            style={styles.iconEye}
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -116,58 +181,137 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     padding: 20,
-    paddingTop: 80,
-  },
-  backButton: {
-    marginBottom: 20,
-    alignSelf: 'flex-start',
-  },
-  backCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E0E0E0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#000',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 40,
-    alignSelf: 'center',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    alignSelf: 'flex-start',
-    marginBottom: 5,
-  },
-  input: {
-    width: '100%',
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 15,
+    paddingTop: 60,
   },
   confirmButton: {
-    backgroundColor: '#1D2B64',
-    height: 50,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginTop: 10,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  backgroundColor: '#1D2B64',
+  height: 60,
+  borderRadius: 30,
+  paddingHorizontal: 20,
+},
+
+confirmText: {
+  color: '#fff',
+  fontSize: 18,
+  fontWeight: 'bold',
+  textAlign: 'center',
+  flex: 1,
+},
+
+arrowSpacer: {
+  width: 40, // גודל זהה לחץ מימין
+  height: 40,
+},
+
+arrowCircle: {
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  borderRadius: 20,
+  width: 40,
+  height: 40,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+arrowIconImage: {
+  width: 18,
+  height: 18,
+  resizeMode: 'contain',
+  tintColor: '#fff',
+},
+
+  backArrow: {
+    fontSize: 28,
+    color: '#1D2B64',
   },
-  confirmButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+title: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  marginBottom: 30,
+  color: '#1D2B64',
+  textAlign: 'center',
+  fontFamily: 'Poppins-Bold',
+},
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    height: 50,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  eyeIcon: {
+    fontSize: 18,
+    color: '#1D2B64',
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  rowStart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rememberText: {
+    marginLeft: 10,
+    color: '#1D2B64',
+    fontWeight: '500',
+  },
+  forgotText: {
+    color: '#1D2B64',
+    textDecorationLine: 'underline',
+  },
+  arrowIcon: {
+    color: '#fff',
     fontSize: 16,
   },
+ 
+iconLabel: {
+  width: 18,
+  height: 18,
+  marginRight: 6,
+  resizeMode: 'contain',
+},
+iconEye: {
+  width: 22,
+  height: 22,
+  resizeMode: 'contain',
+},
+backButton: {
+  marginBottom: 20,
+  left:10,
+},
+backIcon: {
+  width: 24,
+  height: 24,
+  resizeMode: 'contain',
+  tintColor: '#1D2B64', // אופציונלי
+},
+
+inputLabel: {
+  marginBottom: 6,
+  color: '#1D2B64',
+  fontWeight: 'normal',
+  fontSize: 15,
+  lineHeight: 18, // עוזר ליישר לגובה האייקון
+},
+
+labelRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 6,
+},
+
+ 
 });

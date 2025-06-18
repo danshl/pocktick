@@ -6,13 +6,14 @@ export default function MyCouponsScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/coming-soon.png')} // Optional: replace or remove this line
+        source={require('../../assets/icons/coming-soon.png')} // Optional: replace or remove this line
         style={styles.image}
         resizeMode="contain"
       />
-      <Text style={styles.subtitle}>
-        The Coupons feature is not available yet. Stay tuned for updates!
-      </Text>
+    <Text style={styles.subtitle}>
+      The Coupons feature is not available yet.{' '}
+      <Text style={styles.highlight}>Stay tuned for updates!</Text>
+    </Text>
     </View>
   );
 }
@@ -40,5 +41,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
+  },
+    highlight: {
+    fontSize: 16,
+    color: '#1b2b68',
+    textAlign: 'center',
+    fontFamily: 'Poppins-Bold',
   },
 });
