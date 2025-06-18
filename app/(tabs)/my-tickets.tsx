@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+// ✅ Refactored MyTicketsScreen to match the provided UI design
+
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,28 +8,23 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Animated,
+  Easing,
   Platform,
 } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useUserData } from '../useUserData';
-import { fetchTickets } from '../ticketService'; // ודא שזה הנתיב הנכון
-import { Animated, Easing } from 'react-native';
-import { useRef, useEffect } from 'react';
+import { fetchTickets } from '../ticketService';
 import { Ticket } from '../types';
-
-import { I18nManager } from 'react-native';
-
+import { StatusBar } from 'react-native';
 
 const statusLabels = ['Active', 'Pending', 'Transferred', 'Used'] as const;
-const statusColors = ['#4CAF50', '#FFA726', '#9E9E9E', '#607D8B'];
 
 export default function MyTicketsScreen() {
   const { tickets, setTickets } = useUserData();
   const [selectedStatus, setSelectedStatus] = useState<number>(0);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
-
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const startRotation = () => {
@@ -49,294 +46,336 @@ export default function MyTicketsScreen() {
 
   const refreshTickets = async () => {
     try {
-
       setRefreshing(true);
-      startRotation(); // התחלת סיבוב
+      startRotation();
       const updatedTickets = await fetchTickets();
       setTickets(updatedTickets);
     } catch (err) {
       console.error('Failed to refresh tickets', err);
     } finally {
-      stopRotation(); // עצירת סיבוב
+      stopRotation();
       setRefreshing(false);
     }
   };
 
-const groupedTickets = Object.values(
-  tickets
-    .filter((ticket) => Number(ticket.status) === selectedStatus)
-    .reduce((acc, ticket) => {
-      const key = `${ticket.event.id}-${ticket.status}-${ticket.transactionId ?? 'none'}`;
-      if (!acc[key]) {
-        acc[key] = {
-          event: ticket.event,
-          status: ticket.status,
-          transactionId: ticket.transactionId ?? null, // ✅ הוספת transactionId לקבוצה
-          tickets: [ticket],
-        };
-      } else {
-        acc[key].tickets.push(ticket);
-      }
-      return acc;
-    }, {} as Record<
-      string,
-      {
+  const groupedTickets = Object.values(
+    tickets
+      .filter((ticket) => Number(ticket.status) === selectedStatus)
+      .reduce((acc, ticket) => {
+        const key = `${ticket.event.id}-${ticket.status}-${ticket.transactionId ?? 'none'}`;
+        if (!acc[key]) {
+          acc[key] = {
+            event: ticket.event,
+            status: ticket.status,
+            transactionId: ticket.transactionId ?? null,
+            tickets: [ticket],
+          };
+        } else {
+          acc[key].tickets.push(ticket);
+        }
+        return acc;
+      }, {} as Record<string, {
         event: Ticket['event'];
         status: number;
         transactionId: number | null;
         tickets: Ticket[];
-      }
-    >)
-);
+      }>)
+  );
 
-const renderGroupedTicket = ({ item }: { item: typeof groupedTickets[0] }) => (
-  <TouchableOpacity
-    style={styles.ticketCard}
-    onPress={() =>
-      router.push({
+  const renderGroupedTicket = ({ item }: { item: typeof groupedTickets[0] }) => (
+    <View style={styles.outerFrame}>
+<View style={styles.imageContainer}>
+  <Image source={{ uri: item.event.imageUrl }} style={styles.ticketImage} />
+
+  {/* Date */}
+  <View style={styles.dateBox}>
+    <Text style={styles.dateDay}>{new Date(item.event.date).getDate()}</Text>
+    <Text style={styles.dateMonth}>
+      {new Date(item.event.date).toLocaleString('default', { month: 'short' }).toUpperCase()}
+    </Text>
+  </View>
+
+  {/* NEW: Status tag */}
+<View
+  style={[
+    styles.statusContainer,
+    {
+      backgroundColor:
+        item.status === 1
+          ? '#FC803B' // Pending
+          : '#4CAF50', // Others (e.g., Active)
+    },
+  ]}
+>
+  <Text style={styles.statusText}>{statusLabels[item.status]}</Text>
+</View>
+</View>
+
+<View style={styles.detailsContainer}>
+  <Text style={styles.eventTitle}>{item.event.name}</Text>
+  <View style={styles.locationRow}>
+    <Image source={require('../../assets/icons/location.png')} style={styles.locationIcon} />
+    <Text style={styles.locationText}>{item.event.location}</Text>
+  </View>
+  <View style={styles.ticketBottomRow}>
+    <Text style={styles.price}>${item.tickets[0].price}</Text>
+    
+    <TouchableOpacity
+      style={styles.detailsButton}
+      onPress={() => router.push({
         pathname: '/ticket-details',
-        params: { tickets: JSON.stringify(item.tickets) },
-      })
-    }
-  >
-    <View style={styles.imageWrapper}>
-      <Image source={{ uri: item.event.imageUrl }} style={styles.ticketImageFull} />
-      <View style={styles.eventNameTag}>
-        <Text style={styles.eventNameText}>{item.event.name}</Text>
-      </View>
-      <View
-        style={[
-          styles.statusTag,
-          { backgroundColor: statusColors[item.status] },
-        ]}
-      >
-        <Text style={styles.statusText}>{statusLabels[item.status]}</Text>
-      </View>
+        params: { tickets: JSON.stringify(item.tickets) }
+      })}
+    >
+      <Text style={styles.detailsButtonText}>Details</Text>
+      <Image source={require('../../assets/icons/chevron.png')} style={styles.detailsArrow} />
+    </TouchableOpacity>
+  </View>
+</View>
     </View>
+  );
 
-    <View style={styles.ticketInfoBoxHorizontal}>
-      <View style={styles.detailColumn}>
-        <Text style={styles.label}>DATE</Text>
-        <Text style={styles.detail}>
-          {new Date(item.event.date).toLocaleDateString()}
-        </Text>
-      </View>
-      <View style={styles.detailColumn}>
-        <Text style={styles.label}>LOCATION</Text>
-        <Text style={styles.detail}>{item.event.location}</Text>
-      </View>
-      <View style={styles.detailColumn}>
-        <Text style={styles.label}>TICKETS</Text>
-        <Text style={styles.detail}>{item.tickets.length}</Text>
-      </View>
-      <View style={styles.detailColumn}>
-        <Text style={styles.label}>PRICE</Text>
-        <Text style={styles.detail}>
-          {item.tickets.length > 1 ? 'Multiple' : `₪${item.tickets[0].price}`}
-        </Text>
-      </View>
-    </View>
-  </TouchableOpacity>
-);
+  return (
+    <View style={styles.wrapper}>
+      <StatusBar barStyle="light-content" backgroundColor="#1B2B68" />
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.headerIconLeft}>
+          <Image source={require('../../assets/icons/hamburger.png')} style={styles.iconImage} />
+        </TouchableOpacity>
 
-return (
-  <View style={{ flex: 1, alignItems: 'center', backgroundColor: '#fff' }}>
-    <View style={[styles.container, { width: '100%', maxWidth: 700 }]}>
-      <View style={styles.tabBar}>
+        <Image source={require('../../assets/icons/logo_full_white.png')} style={styles.logo} />
+
+        <TouchableOpacity style={styles.headerIconRight}>
+          <Image source={require('../../assets/icons/notification.png')} style={styles.iconImage} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Tabs */}
+      <View style={styles.tabBarWrapper}>
         {statusLabels.map((label, index) => (
           <TouchableOpacity
             key={index}
             onPress={() => setSelectedStatus(index)}
-            style={[
-              styles.tabButton,
-              selectedStatus === index && styles.tabButtonActive,
-            ]}
+            style={[styles.tabButton, selectedStatus === index && styles.tabButtonActive]}
           >
-            <Text
-              style={[
-                styles.tabText,
-                selectedStatus === index && styles.tabTextActive,
-              ]}
-            >
+            <Text style={[styles.tabText, selectedStatus === index && styles.tabTextActive]}>
               {label}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
+      {/* Ticket List */}
       {groupedTickets.length === 0 ? (
-        <Text style={styles.emptyText}>
-          No {statusLabels[selectedStatus]} tickets found.
-        </Text>
+        <Text style={styles.emptyText}>No {statusLabels[selectedStatus]} tickets found.</Text>
       ) : (
         <FlatList
           data={groupedTickets}
           renderItem={renderGroupedTicket}
-          keyExtractor={(item) =>
-            `${item.event.id}-${item.status}-${item.transactionId ?? 'none'}-${item.tickets.map(t => t.id).join('-')}`
-          }
-          contentContainerStyle={{ paddingBottom: 100 }}
+          keyExtractor={(item) => `${item.event.id}-${item.status}-${item.transactionId ?? 'none'}-${item.tickets.map(t => t.id).join('-')}`}
+          contentContainerStyle={styles.ticketList}
+          showsVerticalScrollIndicator={false}
+          refreshing={refreshing}
+          onRefresh={refreshTickets}
         />
       )}
     </View>
-
-    <TouchableOpacity style={styles.refreshButton} onPress={refreshTickets}>
-      <Animated.Image
-        source={require('../../assets/images/refresh.png')}
-        style={[
-          styles.refreshIcon,
-          {
-            transform: [{
-              rotate: rotateAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '360deg'],
-              }),
-            }],
-          }
-        ]}
-      />
-    </TouchableOpacity>
-  </View>
-);
+  );
 }
 
-
 const styles = StyleSheet.create({
-container: {
-  flex: 1,
-  backgroundColor: '#fff',
-  padding: 20,
-  paddingBottom: 100,
-  position: 'relative', // חשוב!
-  top: Platform.OS === 'android' ? -30 : 0,
-},
-  tabBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    borderRadius: 10,
-    marginTop: 50,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  tabButtonActive: {
-    backgroundColor: '#1D2B64',
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: 'bold',
-  },
-  tabTextActive: {
-    color: '#fff',
-  },
-  ticketCard: {
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  imageWrapper: {
-    position: 'relative',
-  },
-  ticketImageFull: {
-    width: '100%',
-    height: 150,
-    resizeMode: 'cover',
-  },
-  eventNameTag: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderBottomRightRadius: 8,
-  },
-  eventNameText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  statusTag: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderBottomLeftRadius: 8,
-  },
-  statusText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  ticketInfoBoxHorizontal: {
+  wrapper: { flex: 1, backgroundColor: '#fff' },
+  tabBarWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 14,
+    marginTop: -15,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+  },
+  tabButton: {
     backgroundColor: '#F5F5F5',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  detailColumn: {
+  tabButtonActive: { backgroundColor: '#FFC107' },
+  tabText: { fontFamily: 'Poppins-Regular', fontSize: 14, color: '#1D2B64' },
+  tabTextActive: { fontFamily: 'Poppins-Bold', color: '#1D2B64' },
+  ticketList: { paddingHorizontal: 20, paddingBottom: 80 },
+outerFrame: {
+  backgroundColor: '#fff',
+  borderRadius: 16,
+  padding: 12,
+  marginBottom: 16,
+  shadowColor: '#000',
+  shadowOpacity: 0.04,       // 🔽 פחות אטימות
+  shadowRadius: 2,           // 🔽 טווח צל קטן יותר
+  shadowOffset: { width: 0, height: 2 }, // 🔽 פחות עומק
+  elevation: 2,              // 🔽 באנדרואיד
+},
+  imageContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  ticketImage: {
+    width: '100%',
+    height: 160,
+    resizeMode: 'cover',
+    borderRadius: 16,
+  },
+  dateBox: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#FFFFFFEB', 
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
     alignItems: 'center',
   },
-  detailRow: {
+  dateDay: { fontSize: 18, fontFamily: 'Poppins-Bold', color: '#1D2B64' },
+  dateMonth: { fontSize: 16, fontFamily: 'Poppins-Regular', color: '#1D2B64' },
+  statusBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#4CAF50',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  detailsContainer: {
+    flexDirection: 'column',
+    gap: 6,
+  },
+  eventTitle: { fontSize: 18, fontFamily: 'Poppins-bold', color: '#000'   },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  locationIcon: { width: 14, height: 14, tintColor: '#888' },
+  locationText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: '#888' },
+  ticketBottomRow: {
+    marginTop: 10,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  detail: {
-    fontSize: 14,
-    color: '#333',
-    marginLeft: 4,
+  price: { fontSize: 16, fontFamily: 'Poppins-Bold', color: '#1D2B64' },
+  detailsButton: {
+    flexDirection: 'row',
+    backgroundColor: '#EEF0FF',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
   },
-  label: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#1D2B64',
-    marginBottom: 4,
-  },
+  detailsButtonText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: '#1D2B64' },
+  detailsArrow: { width: 14, height: 14, tintColor: '#1D2B64', marginLeft: 6 },
   emptyText: {
     textAlign: 'center',
-    color: '#888',
-    marginTop: 40,
+    fontFamily: 'Poppins-Regular',
+    color: '#999',
     fontSize: 16,
+    marginTop: 40,
   },
-refreshButton: {
+  refreshButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 24,
+    backgroundColor: '#1D2B64',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 6,
+  },
+  refreshIcon: { width: 28, height: 28, tintColor: '#fff' },
+  header: {
+    width: '100%',
+    height: 180,
+    backgroundColor: '#1B2B68',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    position: 'relative',
+  },
+  logo: {
+    width: 300.26,
+    height: 87,
+    resizeMode: 'contain',
+    top: 23,
+    left: -10,
+  },
+  headerIconLeft: {
+    position: 'absolute',
+    left: 20,
+    top: Platform.OS === 'ios' ? 60 : 40,
+  },
+  headerIconRight: {
+    position: 'absolute',
+    right: 20,
+    top: Platform.OS === 'ios' ? 60 : 40,
+  },
+  iconImage: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+    tintColor: '#fff',
+  },
+  newStatusBadge: {
   position: 'absolute',
-  bottom: 100,
-  right: 24,
-  backgroundColor: '#1D2B64',
-  width: 56,
-  height: 56,
-  borderRadius: 28,
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 100,
-  elevation: 6,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.25,
-  shadowRadius: 3.84,
+  top: 10,
+  right: 10,
+  backgroundColor: '#29D697',
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderTopLeftRadius: 6,
+  borderBottomRightRadius: 8,
+  shadowColor: '#1B2B68',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.12,
+  shadowRadius: 20,
+  elevation: 5,
 },
-refreshIcon: {
-  width: 28,
-  height: 28,
-  tintColor: '#fff',
-},
-refreshText: {
+
+newStatusText: {
   color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 14,
+  fontSize: 13,
+  fontFamily: 'Poppins-Regular',
+},
+statusContainer: {
+  position: 'absolute',
+  top: 0,
+  right: 15,                    // ⬅️ במקום right: 0
+  backgroundColor: '#29D697',
+  paddingHorizontal: 12,
+  paddingVertical: 5,
+  borderBottomRightRadius: 8,
+  borderBottomLeftRadius: 8,
+  shadowColor: '#1B2B68',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.12,
+  shadowRadius: 20,
+  elevation: 4,
+  zIndex: 10,
+},
+
+statusText: {
+  color: '#fff',
+  fontSize: 15,
+  fontFamily: 'Poppins-regular',
 },
 });

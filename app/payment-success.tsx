@@ -27,7 +27,7 @@ export default function PaymentSuccessScreen() {
         });
 
         const json = await res.json();
-        console.log('✅ Verification response:', json);
+        console.log('Verification response:', json);
 
         if (json.success) {
           setTimeout(() => {
@@ -35,7 +35,7 @@ export default function PaymentSuccessScreen() {
           }, 2000); // המתנה של 2 שניות לפני מעבר
         }
       } catch (error) {
-        console.error('❌ Verification error:', error);
+        console.error('Verification error:', error);
       }
     };
 
