@@ -1,3 +1,5 @@
+// ExternalUploadScreen.tsx
+
 import React, { useState } from 'react';
 import {
   View,
@@ -13,6 +15,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { submitExternalTransfer } from './api/externalTransfer';
 
 export default function ExternalUploadScreen() {
   const router = useRouter();
@@ -62,48 +65,28 @@ export default function ExternalUploadScreen() {
 
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const formData = new FormData();
+      if (!token) throw new Error('Missing token');
 
-      formData.append('eventName', eventName);
-      formData.append('seatLocation', seatLocation);
-      formData.append('dateTime', dateTime);
-      formData.append('additionalDetails', details || '');
-      formData.append('ticketCount', ticketCount.toString());
-      formData.append('buyerEmail', buyerEmail);
-      formData.append('price', price.toString());
-      formData.append('location', location);
-      formData.append('startTime', startTime);
-      formData.append('gatesOpenTime', gatesOpenTime);
-
-      fileUris.forEach((uri, index) => {
-        formData.append('ticketFiles', {
-          uri,
-          name: `ticket-${index + 1}.jpg`,
-          type: 'image/jpeg',
-        } as any);
+      await submitExternalTransfer({
+        eventName,
+        seatLocation,
+        dateTime,
+        additionalDetails: details,
+        ticketCount,
+        buyerEmail,
+        price,
+        location,
+        startTime,
+        gatesOpenTime,
+        fileUris,
+        token,
       });
 
-      const res = await fetch(
-        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/submit',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (res.ok) {
-        Alert.alert('Success', 'Transfer submitted successfully.');
-        router.back();
-      } else {
-        const text = await res.text();
-        Alert.alert('Error', text || 'Failed to submit transfer.');
-      }
-    } catch (err) {
+      Alert.alert('Success', 'Transfer submitted successfully.');
+      router.back();
+    } catch (err: any) {
       console.error(err);
-      Alert.alert('Error', 'An unexpected error occurred.');
+      Alert.alert('Error', err.message || 'An unexpected error occurred.');
     }
   };
 
@@ -119,90 +102,19 @@ export default function ExternalUploadScreen() {
             <Image source={require('../assets/icons/square.png')} style={styles.icon} />
             <Text style={styles.title}>Upload & sell external ticket</Text>
           </View>
-<Text style={styles.sectionTitle}>Enter Buyer Details</Text>
 
-<TextInput
-  style={styles.input}
-  placeholder="Number of Tickets"
-  placeholderTextColor="#807A7A"
-  keyboardType="numeric"
-  value={ticketCount}
-  onChangeText={setTicketCount}
-/>
+          <Text style={styles.sectionTitle}>Enter Buyer Details</Text>
 
-<TextInput
-  style={styles.input}
-  placeholder="Event Name"
-  placeholderTextColor="#807A7A"
-  value={eventName}
-  onChangeText={setEventName}
-/>
-
-<TextInput
-  style={styles.input}
-  placeholder="Seat Location"
-  placeholderTextColor="#807A7A"
-  value={seatLocation}
-  onChangeText={setSeatLocation}
-/>
-
-<TextInput
-  style={styles.input}
-  placeholder="Buyer Email"
-  placeholderTextColor="#807A7A"
-  value={buyerEmail}
-  onChangeText={setBuyerEmail}
-/>
-
-<TextInput
-  style={styles.input}
-  placeholder="Date & Time"
-  placeholderTextColor="#807A7A"
-  value={dateTime}
-  onChangeText={setDateTime}
-/>
-
-<TextInput
-  style={styles.input}
-  placeholder="Location"
-  placeholderTextColor="#807A7A"
-  value={location}
-  onChangeText={setLocation}
-/>
-
-<TextInput
-  style={styles.input}
-  placeholder="Start Time"
-  placeholderTextColor="#807A7A"
-  value={startTime}
-  onChangeText={setStartTime}
-/>
-
-<TextInput
-  style={styles.input}
-  placeholder="Gates Open Time"
-  placeholderTextColor="#807A7A"
-  value={gatesOpenTime}
-  onChangeText={setGatesOpenTime}
-/>
-
-<TextInput
-  style={styles.input}
-  placeholder="Price"
-  placeholderTextColor="#807A7A"
-  keyboardType="numeric"
-  value={price}
-  onChangeText={setPrice}
-/>
-
-<TextInput
-  style={styles.input}
-  placeholder="Additional Details"
-  placeholderTextColor="#807A7A"
-  multiline
-  value={details}
-  onChangeText={setDetails}
-/>
+          <TextInput style={styles.input} placeholder="Number of Tickets" placeholderTextColor="#807A7A" keyboardType="numeric" value={ticketCount} onChangeText={setTicketCount} />
+          <TextInput style={styles.input} placeholder="Event Name" placeholderTextColor="#807A7A" value={eventName} onChangeText={setEventName} />
+          <TextInput style={styles.input} placeholder="Seat Location" placeholderTextColor="#807A7A" value={seatLocation} onChangeText={setSeatLocation} />
+          <TextInput style={styles.input} placeholder="Buyer Email" placeholderTextColor="#807A7A" value={buyerEmail} onChangeText={setBuyerEmail} />
+          <TextInput style={styles.input} placeholder="Date & Time" placeholderTextColor="#807A7A" value={dateTime} onChangeText={setDateTime} />
+          <TextInput style={styles.input} placeholder="Location" placeholderTextColor="#807A7A" value={location} onChangeText={setLocation} />
+          <TextInput style={styles.input} placeholder="Start Time" placeholderTextColor="#807A7A" value={startTime} onChangeText={setStartTime} />
+          <TextInput style={styles.input} placeholder="Gates Open Time" placeholderTextColor="#807A7A" value={gatesOpenTime} onChangeText={setGatesOpenTime} />
+          <TextInput style={styles.input} placeholder="Price" placeholderTextColor="#807A7A" keyboardType="numeric" value={price} onChangeText={setPrice} />
+          <TextInput style={styles.input} placeholder="Additional Details" placeholderTextColor="#807A7A" multiline value={details} onChangeText={setDetails} />
 
           <TouchableOpacity style={styles.uploadBox} onPress={pickFile}>
             <Text style={styles.uploadLabel}>Upload Ticket</Text>
@@ -262,6 +174,14 @@ const styles = StyleSheet.create({
     color: '#1D2B64',
     fontFamily: 'Poppins-SemiBold',
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'Poppins-Bold',
+    color: '#222',
+    marginBottom: 12,
+    textAlign: 'left',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -309,12 +229,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
-  sectionTitle: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  fontFamily: 'Poppins-Bold', // ודא שהגופן מוטען
-  color: '#222',              // כהה יותר
-  marginBottom: 12,
-  textAlign: 'left',
-},
 });

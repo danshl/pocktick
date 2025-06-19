@@ -1,15 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'react-native';
 
 export default function AboutUsScreen() {
   const router = useRouter();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.headerImageContainer}>
         <Image
-          source={require('../../assets/images/name.png')}
+          source={require('../../assets/icons/logo_full_blue.png')}
           style={styles.headerImage}
           resizeMode="contain"
         />
@@ -63,18 +65,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     flex: 1,
   },
-  content: {
-    padding: 24,
-    paddingTop: 80,
-    paddingBottom: 100,
-  },
+    content: {
+      padding: 24,
+      paddingTop: 0, // ⬅️ זה מה שמרחיק את התוכן מהחלק העליון
+      paddingBottom: 100,
+    },
   headerImageContainer: {
     alignItems: 'center',
     marginBottom: 20,
   },
   headerImage: {
-    width: 180,
-    height: 60,
+    width: 380,
+    height: 130,
+    right: 10,
+    bottom: -30,
   },
   sectionTitle: {
     fontSize: 18,

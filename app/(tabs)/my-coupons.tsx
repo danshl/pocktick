@@ -6,7 +6,7 @@ export default function MyCouponsScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/icons/coming-soon.png')} // Optional: replace or remove this line
+        source={require('../../assets/icons/coming-soon.png')}
         style={styles.image}
         resizeMode="contain"
       />

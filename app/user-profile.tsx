@@ -84,7 +84,7 @@ const handleSave = async () => {
 
       {/* Email */}
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}><Image source={require('../assets/icons/mail.png')} style={styles.icon} /> Email</Text>
+        <Text style={styles.label}><Image source={require('../assets/icons/Message.png')} style={styles.icon} /> Email</Text>
         <View style={[styles.inputWrapper, styles.disabledWrapper]}>
           <TextInput
             style={[styles.input, styles.disabledInput]}
@@ -97,7 +97,7 @@ const handleSave = async () => {
 
       {/* Phone */}
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}><Image source={require('../assets/icons/telephone.png')} style={styles.icon} /> Phone</Text>
+        <Text style={styles.label}><Image source={require('../assets/icons/phone.png')} style={styles.icon} /> Phone</Text>
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
@@ -210,16 +210,19 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginVertical: 10,
   },
-  saveButton: {
-    backgroundColor: '#1D2B64',
-    height: 56,
-    borderRadius: 28,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: 10,
-  },
+saveButton: {
+  backgroundColor: '#1D2B64',
+  borderRadius: 20,
+  height: 56,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingVertical: 14,
+  paddingHorizontal: 20,
+  width: 335,
+  alignSelf: 'center',
+  marginTop: 10,
+},
   saveText: {
     color: '#fff',
     fontSize: 18,
@@ -230,8 +233,8 @@ const styles = StyleSheet.create({
   arrowCircle: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 20,
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },

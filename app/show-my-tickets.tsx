@@ -15,21 +15,17 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 const { width, height } = Dimensions.get('window');
 
 export default function ShowMyTicketsScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const raw = params.ticketUrls;
+const router = useRouter();
+const params = useLocalSearchParams();
 
-  let ticketUrls: string[] = [];
-  try {
-    if (Array.isArray(raw)) {
-      ticketUrls = JSON.parse(raw[0] || '[]');
-    } else if (typeof raw === 'string') {
-      ticketUrls = JSON.parse(raw || '[]');
-    }
-  } catch (error) {
-    console.error('Failed to parse ticketUrls:', error);
-    ticketUrls = [];
-  }
+let ticketUrls: string[] = [];
+try {
+  const raw = decodeURIComponent(params.ticketUrls as string);
+  ticketUrls = JSON.parse(raw);
+} catch (error) {
+  console.error('Failed to parse ticketUrls:', error);
+  ticketUrls = [];
+}
 
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);

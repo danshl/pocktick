@@ -1,15 +1,13 @@
 import React, { createContext, useContext, useState } from 'react';
 
-import type { Ticket } from './types'; // או הנתיב לפי מיקום
+import type { Ticket } from './types';
 
 type UserDataContextType = {
   tickets: Ticket[];
   setTickets: (tickets: Ticket[]) => void;
 };
-// יצירת הקונטקסט
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
 
-// קומפוננטת Provider שעוטפת את האפליקציה
 export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
@@ -20,7 +18,6 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 };
 
-// הוק לשימוש בנתונים מתוך הקונטקסט
 export const useUserData = () => {
   const context = useContext(UserDataContext);
   if (!context) {

@@ -7,9 +7,8 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { UserDataProvider } from '../app/useUserData'; // ודא שהנתיב נכון
+import { UserDataProvider } from '../app/useUserData'; 
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -47,11 +46,11 @@ export default function RootLayout() {
           <Stack.Screen name="SetNewPasswordScreen" options={{ headerShown: false }} />
           <Stack.Screen name="GoogleSignIn" options={{ headerShown: false }} />
           <Stack.Screen name="verify-seller" options={{ headerShown: false }} />
-          <Stack.Screen name="open-tickets-screen" options={{ headerShown: false }} />
+          <Stack.Screen name="show-my-tickets" options={{ headerShown: false }} />
           <Stack.Screen name="payment-success" options={{ headerShown: false }} />
           <Stack.Screen name="payment" options={{ headerShown: false }} />
           <Stack.Screen name="external-upload" options={{ headerShown: false }} />
-          <Stack.Screen name="show-my-tickets" options={{ headerShown: false }} />
+          <Stack.Screen name="open-tickets-screen" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />

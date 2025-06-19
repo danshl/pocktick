@@ -32,7 +32,7 @@ export default function PaymentSuccessScreen() {
         if (json.success) {
           setTimeout(() => {
             router.replace('/my-tickets');
-          }, 2000); // המתנה של 2 שניות לפני מעבר
+          }, 2000);  
         }
       } catch (error) {
         console.error('Verification error:', error);

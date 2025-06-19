@@ -41,7 +41,7 @@ export default function LoadScreen() {
     <View style={styles.container}>
 <Video
   ref={videoRef}
-  source={require('../assets/splash.mp4')}
+  source={require('../assets/videos/splash.mp4')}
   style={styles.video}
   isMuted
   shouldPlay
@@ -59,7 +59,7 @@ export default function LoadScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff', // ← מסך לבן
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
   },

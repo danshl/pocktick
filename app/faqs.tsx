@@ -183,8 +183,8 @@ arrowCircle: {
   padding: 10,
 },
   arrowIcon: {
-    width: 14,
-    height: 14,
+    width: 12,
+    height: 12,
     tintColor: '#fff',
   },
 });

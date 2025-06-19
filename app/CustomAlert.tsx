@@ -5,13 +5,15 @@ type Props = {
   visible: boolean;
   message: string;
   onClose: () => void;
+  title?: string; // ← אופציונלי
 };
 
-export default function CustomAlert({ visible, message, onClose }: Props) {
+export default function CustomAlert({ visible, message, onClose, title }: Props) {
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.modal}>
+          {title && <Text style={styles.title}>{title}</Text>}
           <Text style={styles.message}>{message}</Text>
           <TouchableOpacity onPress={onClose} style={styles.button}>
             <Text style={styles.buttonText}>OK</Text>
@@ -40,6 +42,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
     elevation: 6,
+  },
+  title: {
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+    color: '#1D2B64',
+    marginBottom: 12,
+    textAlign: 'center',
   },
   message: {
     fontSize: 16,

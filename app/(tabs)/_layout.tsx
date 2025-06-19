@@ -11,6 +11,7 @@ import {
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomAlert from '../CustomAlert';
+import { getSellerVerificationStatus } from '../api/sellerApi';
 
 export default function TabLayout() {
   const router = useRouter();
@@ -21,33 +22,20 @@ export default function TabLayout() {
   const handleExternalUpload = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const res = await fetch(
-        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/sellerverification/status',
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const status = await getSellerVerificationStatus(token || '');
 
-if (res.ok) {
-  const data = await res.json();
-  const status = data.status?.toLowerCase();
-  if (status === 'approved') {
-    setShowOptions(false);
-    router.push('/external-upload');
-  } else {
-    setAlertMessage('Please verify your account via the Profile screen before uploading tickets.');
-    setAlertVisible(true);
-  }
-} else {
-  setAlertMessage('Error checking verification status.');
-  setAlertVisible(true);
-}
-} catch (err) {
-  console.error('Verification API error:', err);
-  setAlertMessage('An error occurred while connecting to the server.');
-  setAlertVisible(true);
-}
-
+      if (status === 'approved') {
+        setShowOptions(false);
+        router.push('/external-upload');
+      } else {
+        setAlertMessage('Please verify your account via the Profile screen before uploading tickets.');
+        setAlertVisible(true);
+      }
+    } catch (err) {
+      console.error('Verification API error:', err);
+      setAlertMessage('An error occurred while connecting to the server.');
+      setAlertVisible(true);
+    }
   };
 
   return (
@@ -114,7 +102,6 @@ if (res.ok) {
         <Tabs.Screen name="_layout1" options={{ href: null }} />
       </Tabs>
 
-      {/* Overlay */}
       {showOptions && (
         <View
           style={[
@@ -128,7 +115,6 @@ if (res.ok) {
         />
       )}
 
-      {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, showOptions && styles.fabActive]}
         onPress={() => setShowOptions(!showOptions)}
@@ -140,7 +126,6 @@ if (res.ok) {
         />
       </TouchableOpacity>
 
-      {/* Options */}
       {showOptions && (
         <View style={styles.optionsOverlay}>
           <TouchableOpacity
@@ -161,7 +146,6 @@ if (res.ok) {
         </View>
       )}
 
-      {/* Custom Alert */}
       <CustomAlert
         visible={alertVisible}
         message={alertMessage}

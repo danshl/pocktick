@@ -73,7 +73,7 @@ const handleVerifyCode = async () => {
     console.error('Error:', error);
   }
 
-  setIsLoading(false); // סיום טעינה
+  setIsLoading(false);
 };
 
 
@@ -101,7 +101,7 @@ const handleVerifyCode = async () => {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Image source={require('../assets/icons/prev_black.png')} style={styles.backIcon} />
+        <Image source={require('../assets/icons/arrow-left.png')} style={styles.backIcon} />
       </TouchableOpacity>
 
       <Text style={styles.title}>Check your email</Text>
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 180,
+    paddingBottom: 310,
   },
   backButton: {
     position: 'absolute',
@@ -219,10 +219,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     fontFamily: 'Poppins-Regular',
   },
-  email: {
-    fontWeight: 'bold',
-    color: '#000',
-  },
+email: {
+  color: '#1D2B64',  
+  fontFamily: 'Poppins-Bold', 
+},
   codeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -249,6 +249,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     flexDirection: 'row',
     marginTop: 10,
+    width: '100%',
   },
   verifyButtonText: {
     color: '#fff',
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 arrowCircle: {
-  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+   backgroundColor: 'rgba(255, 255, 255, 0.15)',
   width: 28,
   height: 28,
   borderRadius: 14,
@@ -287,7 +288,6 @@ arrowCircle: {
 arrowIcon: {
   width: 14,
   height: 14,
-  tintColor: '#1D2B64',
 },
 
 });

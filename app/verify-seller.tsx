@@ -47,7 +47,7 @@ export default function VerifySellerScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!facebookLink || !idImageUri || !additionalIdUri || !videoUri) {
+    if (!facebookLink || !idImageUri || !additionalIdUri) {
       Alert.alert('Missing Info', 'Please fill all fields and upload all files.');
       return;
     }
@@ -56,7 +56,6 @@ export default function VerifySellerScreen() {
     formData.append('facebookUrl', facebookLink);
     formData.append('idImage', { uri: idImageUri, name: 'id.jpg', type: 'image/jpeg' } as any);
     formData.append('additionalId', { uri: additionalIdUri, name: 'extra.jpg', type: 'image/jpeg' } as any);
-    formData.append('video', { uri: videoUri, name: 'selfie.mp4', type: 'video/mp4' } as any);
 
     const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/sellerverification/submit', {
       method: 'POST',
@@ -98,7 +97,7 @@ export default function VerifySellerScreen() {
         <>
           <Text style={styles.title}>Verify Seller</Text>
           <Text style={styles.description}>
-            To sell tickets for unofficial partners, please submit your Facebook profile, a photo of your ID, an additional ID (e.g., passport or license), and a short selfie video.
+            To sell tickets for unofficial partners, please submit your Facebook profile, a photo of your ID and an additional ID (e.g., passport or license).
           </Text>
 
           <View style={styles.formSection}>
@@ -125,12 +124,12 @@ export default function VerifySellerScreen() {
               disabled={disabled}
             />
 
-            <UploadSection
-              label="Upload Selfie Video"
+            {/* <UploadSection
+              label="Upload Selfie Video (until 5 sec)"
               value={videoUri}
               onPress={() => pickFile('video', setVideoUri)}
               disabled={disabled}
-            />
+            /> */}
           </View>
 
           <TouchableOpacity
@@ -320,6 +319,6 @@ checkIcon: {
   width: 18,
   height: 18,
   resizeMode: 'contain',
-  tintColor: '#1D2B64', // או הסר אם התמונה בצבע הנכון
+  tintColor: '#1D2B64',
 },
 });

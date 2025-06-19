@@ -1,6 +1,4 @@
 // TicketDetailsScreen.tsx
-// ✅ Updated layout and styling per design reference (top image + details row + info section + QR/Transfer buttons)
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -289,40 +287,37 @@ const handleTransfer = async () => {
 return (
   <View style={styles.container}>
     <ScrollView contentContainerStyle={styles.contentWrapper} showsVerticalScrollIndicator={false}>
-      {/* Top image with overlay */}
       <View style={styles.imageWrapper}>
         <Image source={{ uri: ticket.event.imageUrl }} style={styles.detailImage} />
         <LinearGradient colors={['rgba(0,0,0,0.2)', 'transparent']} style={styles.gradientOverlay} />
-
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={26} color="white" />
         </TouchableOpacity>
         <Text style={styles.eventDetailsTitle}>Event Details</Text>
       </View>
 
-      {/* Details row */}
       <View style={styles.detailsRow}>
-<View style={[styles.detailItem, { flex: 1.4 }]}>
-  <Text style={styles.detailLabel}>Date</Text>
-  <Text style={styles.detailValue}>
-    {(() => {
-      if (ticket.isExternal) {
-        const parts = ticket.event.date.split('/');
-        if (parts.length === 3) {
-          const [day, month, year] = parts;
-          return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year.slice(-2)}`;
-        }
-        return ticket.event.date; // fallback
-      } else {
-        const date = new Date(ticket.event.date);
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear().toString().slice(-2);
-        return `${day}.${month}.${year}`;
-      }
-    })()}
-  </Text>
-</View>
+        <View style={[styles.detailItem, { flex: 1.4 }]}>
+          <Text style={styles.detailLabel}>Date</Text>
+          <Text style={styles.detailValue}>
+            {(() => {
+              if (ticket.isExternal) {
+                const parts = ticket.event.date.split('/');
+                if (parts.length === 3) {
+                  const [day, month, year] = parts;
+                  return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year.slice(-2)}`;
+                }
+                return ticket.event.date;
+              } else {
+                const date = new Date(ticket.event.date);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear().toString().slice(-2);
+                return `${day}.${month}.${year}`;
+              }
+            })()}
+          </Text>
+        </View>
 
         <View style={[styles.detailItem, { flex: 2 }]}>
           <Text style={styles.detailLabel}>Location</Text>
@@ -334,20 +329,18 @@ return (
           <Text style={styles.detailValue}>₪{totalPrice}</Text>
         </View>
 
-<View style={[styles.detailItem, styles.lastDetailItem, { flex: 1.4 }]}>
-  <Text style={styles.detailLabel}>Tickets</Text>
-  <Text style={styles.detailValue}>
-    {selectedTickets?.[0]?.isExternal
-      ? selectedTickets[0].ticketCount
-      : selectedTickets.length}
-  </Text>
-</View>
+        <View style={[styles.detailItem, styles.lastDetailItem, { flex: 1.4 }]}>
+          <Text style={styles.detailLabel}>Tickets</Text>
+          <Text style={styles.detailValue}>
+            {selectedTickets?.[0]?.isExternal
+              ? selectedTickets[0].ticketCount
+              : selectedTickets.length}
+          </Text>
+        </View>
       </View>
 
-      {/* Event title */}
       <Text style={styles.eventName}>{ticket.event.name}</Text>
 
-      {/* Info sections */}
       <View style={styles.infoSection}>
         <View style={styles.infoRow}>
           <View style={styles.iconWrapper}>
@@ -396,7 +389,6 @@ return (
         </View>
       </View>
 
-      {/* Action Buttons */}
       <View style={styles.actionsRow}>
         {selectedTicket.status === 0 && (
           <>
@@ -410,54 +402,54 @@ return (
             >
               <Text style={styles.actionBtnText}>Transfer Ticket</Text>
             </TouchableOpacity>
-<TouchableOpacity
-  style={[styles.actionBtn, styles.qrBtn]}
-  onPress={() => {
-if (selectedTicket.isExternal) {
-  router.push({
-    pathname: '/open-tickets-screen',
-    params: { transferId: selectedTicket.id.toString() }, // לוודא שהוא מומר למחרוזת
-  });
-} else {
-      fetchQrUrls();
-    }
-  }}
->
-  <Text style={styles.actionBtnText}>View QR</Text>
-</TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.qrBtn]}
+              onPress={() => {
+                if (selectedTicket.isExternal) {
+                  router.push({
+                    pathname: '/open-tickets-screen',
+                    params: { transferId: selectedTicket.id.toString() },
+                  });
+                } else {
+                  fetchQrUrls();
+                }
+              }}
+            >
+              <Text style={styles.actionBtnText}>View QR</Text>
+            </TouchableOpacity>
           </>
         )}
 
-{selectedTicket.status === 1 && (
-  selectedTicket.transferSource === null ? (
-    <TouchableOpacity
-      style={[styles.actionBtn, styles.transferBtn]}
-      onPress={() => {
-        if (selectedTicket.isExternal) {
-          handleCancelTransfer(selectedTicket.id); // ← קריאה חדשה לכרטיס חיצוני
-        } else {
-          handleCancelOffer(); // ← רגיל לכרטיס פנימי
-        }
-      }}
-    >
-      <Text style={styles.actionBtnText}>Cancel Offer</Text>
-    </TouchableOpacity>
-  ) : (
-    <TouchableOpacity
-      style={[styles.actionBtn, styles.qrBtn]}
-      onPress={() => {
-        const ticket = selectedTickets[0];
-        if (ticket.isExternal) {
-          handleBuyTransfer(ticket.id);
-        } else {
-          handleBuy();
-        }
-      }}
-    >
-      <Text style={styles.actionBtnText}>Buy</Text>
-    </TouchableOpacity>
-  )
-)}
+        {selectedTicket.status === 1 && (
+          selectedTicket.transferSource === null ? (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.transferBtn]}
+              onPress={() => {
+                if (selectedTicket.isExternal) {
+                  handleCancelTransfer(selectedTicket.id);
+                } else {
+                  handleCancelOffer();
+                }
+              }}
+            >
+              <Text style={styles.actionBtnText}>Cancel Offer</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.qrBtn]}
+              onPress={() => {
+                const ticket = selectedTickets[0];
+                if (ticket.isExternal) {
+                  handleBuyTransfer(ticket.id);
+                } else {
+                  handleBuy();
+                }
+              }}
+            >
+              <Text style={styles.actionBtnText}>Buy</Text>
+            </TouchableOpacity>
+          )
+        )}
       </View>
     </ScrollView>
 
@@ -495,11 +487,9 @@ if (selectedTicket.isExternal) {
                         resizeMode="contain"
                       />
                     </View>
-
                     <Text style={styles.seatText}>
                       {t.seatDescription || `Ticket #${t.id}`}
                     </Text>
-
                     <View style={[styles.selectionCircle, isSelected ? styles.selected : styles.unselected]}>
                       {isSelected && <Text style={styles.checkMark}>✓</Text>}
                     </View>
@@ -571,7 +561,6 @@ if (selectedTicket.isExternal) {
           >
             <Text style={{ fontSize: 28, color: '#1b2b68', right: 8, bottom: 5 }}>×</Text>
           </TouchableOpacity>
-
           <Image
             source={require('../assets/icons/logo_full_blue.png')}
             style={{
@@ -583,7 +572,6 @@ if (selectedTicket.isExternal) {
               alignSelf: 'center',
             }}
           />
-
           <ScrollView
             horizontal
             pagingEnabled
@@ -615,7 +603,6 @@ if (selectedTicket.isExternal) {
               </View>
             ))}
           </ScrollView>
-
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 16 }}>
             {qrUrls.map((_, index) => (
               <View
@@ -630,7 +617,6 @@ if (selectedTicket.isExternal) {
               />
             ))}
           </View>
-
           <Text style={styles.qrText}>Show this code at event entry</Text>
         </View>
       </View>

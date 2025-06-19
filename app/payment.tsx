@@ -30,8 +30,8 @@ export default function PaymentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff', // ← רקע כללי לבן
-    paddingTop: 60, // במקום top: 60
+    backgroundColor: '#fff', 
+    paddingTop: 60, 
   },
   backButton: {
     position: 'absolute',
@@ -44,6 +44,6 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-    backgroundColor: '#fff', // ← רקע פנימי של ה-WebView לבן
+    backgroundColor: '#fff',  
   },
 });

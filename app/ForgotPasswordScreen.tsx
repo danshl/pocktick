@@ -9,11 +9,15 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { requestPasswordReset } from './api/auth';
+import CustomAlert from './CustomAlert';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
   const router = useRouter();
 
   const handleForgotPassword = async () => {
@@ -21,61 +25,40 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     setErrorMessage('');
+
     try {
-      const response = await fetch(
-        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/forgot-password',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        }
-      );
+      const result = await requestPasswordReset(email);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert(
-          'Check your email',
-          'A reset code has been sent to your email.'
-        );
+      if (result.success) {
+        setAlertMessage('A reset code has been sent to your email.');
+        setAlertVisible(true);
         router.push({ pathname: '/VerifyCodeScreen', params: { email } });
       } else {
-        setErrorMessage(
-          'We couldn’t find an account with this email address. Please make sure it’s correct or try a different one.'
-        );
+        setErrorMessage(result.message || 'Something went wrong.');
       }
     } catch (error) {
       setErrorMessage('Something went wrong. Please try again later.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
     <View style={styles.container}>
-      {/* Back button */}
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Image
-          source={require('../assets/icons/arrow-left.png')}
-          style={styles.backIcon}
-        />
+        <Image source={require('../assets/icons/arrow-left.png')} style={styles.backIcon} />
       </TouchableOpacity>
 
-      {/* Title */}
       <Text style={styles.title}>Forgot password</Text>
       <Text style={styles.subtitle}>
         Please enter your email to reset your password
       </Text>
 
-      {/* Email label with icon */}
       <View style={styles.labelContainer}>
-        <Image
-          source={require('../assets/icons/mail.png')}
-          style={styles.labelIcon}
-        />
+        <Image source={require('../assets/icons/mail.png')} style={styles.labelIcon} />
         <Text style={styles.label}>Email</Text>
       </View>
 
-      {/* Email input */}
       <TextInput
         style={styles.input}
         placeholder="Enter your email"
@@ -86,12 +69,8 @@ export default function ForgotPasswordScreen() {
         onChangeText={setEmail}
       />
 
-      {/* Button */}
       <TouchableOpacity
-        style={[
-          styles.resetButton,
-          (!email || loading) && styles.disabledButton,
-        ]}
+        style={[styles.resetButton, (!email || loading) && styles.disabledButton]}
         onPress={handleForgotPassword}
         disabled={!email || loading}
       >
@@ -99,17 +78,16 @@ export default function ForgotPasswordScreen() {
           {loading ? 'Sending...' : 'Reset password'}
         </Text>
         <View style={styles.arrowCircle}>
-          <Image
-            source={require('../assets/icons/next_white.png')}
-            style={styles.arrowIcon}
-          />
+          <Image source={require('../assets/icons/next_white.png')} style={styles.arrowIcon} />
         </View>
       </TouchableOpacity>
 
-      {/* Error text */}
-      {errorMessage ? (
-        <Text style={styles.errorText}>{errorMessage}</Text>
-      ) : null}
+      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      <CustomAlert
+        visible={alertVisible}
+        message={alertMessage}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 }
@@ -128,7 +106,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     tintColor: '#1D2B64',
-      left:10,
+    left: 10,
   },
   title: {
     fontSize: 20,
@@ -174,17 +152,16 @@ const styles = StyleSheet.create({
     color: '#000',
     fontFamily: 'Poppins-Regular',
   },
-resetButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center', // ✅ הכל מיושר לאמצע
-  backgroundColor: '#1D2B64',
-  height: 56,
-  paddingHorizontal: 20,
-  borderRadius: 16,
-  gap: 10, // מרווח בין הטקסט לחץ (רק אם תומך ב־React Native שלך)
-},
-
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1D2B64',
+    height: 56,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    gap: 10,
+  },
   resetButtonText: {
     color: '#fff',
     fontSize: 16,

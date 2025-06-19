@@ -12,7 +12,7 @@ export default function InitialLoader() {
       <Video
         ref={videoRef}
         style={styles.video}
-        source={require('../assets/intro.mp4')} // ← ודא שהסרטון קיים
+        source={require('../assets/videos/intro.mp4')}
         shouldPlay
         isLooping={false}
         isMuted

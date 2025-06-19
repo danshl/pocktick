@@ -7,7 +7,7 @@ export type Ticket = {
   eventId: number;
   transactionId?: number;
   seatDescription: string;
-  isExternal?: boolean; // ✅ שדה חדש
+  isExternal?: boolean;
   ticketCount?: number;
   event: {
     id: number;

@@ -19,7 +19,7 @@ export default function OpenTicketsScreen() {
   const { transferId } = useLocalSearchParams();
   const [pressing, setPressing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(true); // ✅ מצב בדיקה
+  const [checkingStatus, setCheckingStatus] = useState(true);
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -36,14 +36,14 @@ export default function OpenTicketsScreen() {
         if (res.ok) {
           const isOpened = await res.json();
           if (isOpened) {
-            await openTickets(true); // ↩️ דילוג על loading וניווט ישיר
+            await openTickets(true);
             return;
           }
         }
       } catch (err) {
         console.error('Error checking if tickets are already opened', err);
       } finally {
-        setCheckingStatus(false); // ✅ מוכן להציג את המסך
+        setCheckingStatus(false);
       }
     };
 
@@ -104,7 +104,6 @@ export default function OpenTicketsScreen() {
     outputRange: [1, 1.15],
   });
 
-  // ✅ מחכים לבדיקה בלי להציג UI
   if (checkingStatus) {
     return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
   }

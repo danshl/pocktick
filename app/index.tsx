@@ -15,7 +15,7 @@ export default function AuthCheck() {
         I18nManager.allowRTL(false);
         I18nManager.forceRTL(false);
         await AsyncStorage.setItem('rtlDisabled', 'true');
-        await Updates.reloadAsync(); // 🔁 ריסט מלא כדי שהשינוי ייכנס לתוקף
+        await Updates.reloadAsync();
         return;
       }
 

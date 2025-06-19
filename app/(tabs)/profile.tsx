@@ -10,12 +10,18 @@ import {
   Alert,
   TextInput,
   ScrollView,
+  Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Modal } from 'react-native';
+import {
+  getUserProfile,
+  requestAccountDeletion,
+  confirmAccountDeletion,
+} from '../api/userApi';
+import CustomConfirmModal from '../CustomConfirmModal';
 
 type UserProfile = {
   fullName: string;
@@ -24,22 +30,21 @@ type UserProfile = {
   createdAt: string;
   ticketCount: number;
 };
+
 export default function SettingsScreen() {
   const router = useRouter();
-const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCode, setDeleteCode] = useState('');
   const [deleting, setDeleting] = useState(false);
-
-  const fetchUserProfile = async () => {
+const [showConfirmModal, setShowConfirmModal] = useState(false);
+ 
+  const fetchUser = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/profile', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const data = await getUserProfile(token || '');
       setProfile(data);
     } catch (err) {
       console.error(err);
@@ -48,45 +53,25 @@ const [profile, setProfile] = useState<UserProfile | null>(null);
     }
   };
 
-  useFocusEffect(useCallback(() => {
-    fetchUserProfile();
-
-  }, []));
-
-  const handleDeletePress = () => {
-  Alert.alert(
-    'Delete Account',
-    'Are you sure you want to delete your account? This action is irreversible.',
-    [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Yes',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const token = await AsyncStorage.getItem('authToken');
-            const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/request-delete', {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-              setShowDeleteModal(true);
-            } else {
-              Alert.alert('Error', data.message || 'Failed to request deletion.');
-            }
-          } catch (err) {
-            console.error(err);
-            Alert.alert('Error', 'Something went wrong.');
-          }
-        },
-      },
-    ]
+  useFocusEffect(
+    useCallback(() => {
+      fetchUser();
+    }, [])
   );
+
+const handleDeletePress = () => {
+  setShowConfirmModal(true);
+};
+
+const handleConfirmDeleteRequest = async () => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    await requestAccountDeletion(token || '');
+    setShowConfirmModal(false);
+    setShowDeleteModal(true); // זה מה שפותח את חלון הקוד
+  } catch (err: any) {
+    Alert.alert('Error', err.message);
+  }
 };
 
   const handleLogout = async () => {
@@ -98,23 +83,11 @@ const [profile, setProfile] = useState<UserProfile | null>(null);
     setDeleting(true);
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/confirm-delete', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code: deleteCode }),
-      });
-      if (res.ok) {
-        await AsyncStorage.clear();
-        router.replace('/login');
-      } else {
-        const err = await res.json();
-        Alert.alert('Error', err.message || 'Failed to delete.');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Something went wrong.');
+      await confirmAccountDeletion(token || '', deleteCode);
+      await AsyncStorage.clear();
+      router.replace('/login');
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
     } finally {
       setDeleting(false);
     }
@@ -123,17 +96,11 @@ const [profile, setProfile] = useState<UserProfile | null>(null);
   if (loading) return <ActivityIndicator size="large" style={{ marginTop: 60 }} />;
 
   return (
-    <ScrollView
-  style={styles.container}
-  contentContainerStyle={{ paddingBottom: 40, paddingTop: 75 }}
->
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40, paddingTop: 75 }}>
       <Text style={styles.title}>Profile</Text>
 
       <View style={styles.profileCard}>
-        <Image
-          source={require('../../assets/icons/account.png')}
-          style={styles.avatar}
-        />
+        <Image source={require('../../assets/icons/account.png')} style={styles.avatar} />
         <View style={{ flex: 1 }}>
           <Text style={styles.welcomeText}>Welcome</Text>
           <Text style={styles.profileName}>{profile?.fullName || 'User'}</Text>
@@ -160,35 +127,30 @@ const [profile, setProfile] = useState<UserProfile | null>(null);
         <Text style={styles.deleteText}>Delete My Account</Text>
       </TouchableOpacity>
 
-<Modal
-  transparent
-  animationType="fade"
-  visible={showDeleteModal}
-  onRequestClose={() => setShowDeleteModal(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalBox}>
-      <Text style={styles.modalTitle}>Confirm Deletion</Text>
-      <Text style={styles.infoText}>
-        A verification code has been sent to your email. Please enter it below to confirm account deletion.
-      </Text>
-      <TextInput
-        placeholder="Enter code"
-        style={styles.input}
-        value={deleteCode}
-        onChangeText={setDeleteCode}
-      />
-      <TouchableOpacity onPress={handleConfirmDelete} style={styles.confirmDeleteBtn}>
-        <Text style={styles.confirmDeleteText}>
-          {deleting ? 'Deleting...' : 'Confirm Deletion'}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
-        <Text style={styles.cancelModalText}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
+      <Modal transparent animationType="fade" visible={showDeleteModal} onRequestClose={() => setShowDeleteModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Confirm Deletion</Text>
+            <Text style={styles.infoText}>
+              A verification code has been sent to your email. Please enter it below to confirm account deletion.
+            </Text>
+            <TextInput placeholder="Enter code" style={styles.input} value={deleteCode} onChangeText={setDeleteCode} />
+            <TouchableOpacity onPress={handleConfirmDelete} style={styles.confirmDeleteBtn}>
+              <Text style={styles.confirmDeleteText}>{deleting ? 'Deleting...' : 'Confirm Deletion'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
+              <Text style={styles.cancelModalText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <CustomConfirmModal
+  visible={showConfirmModal}
+  title="Delete Account"
+  message="Are you sure you want to delete your account? This action is irreversible."
+  onCancel={() => setShowConfirmModal(false)}
+  onConfirm={handleConfirmDeleteRequest}
+/>
     </ScrollView>
   );
 }
@@ -204,7 +166,6 @@ function SettingRow({ icon, text, onPress }: { icon: any; text: string; onPress:
     </TouchableOpacity>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -214,7 +175,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Bold',
+    fontFamily: 'Poppins-SemiBold',
     marginBottom: 24,
   },
   profileCard: {
@@ -237,14 +198,13 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 14,
-    color: '#888',
     fontFamily: 'Poppins-Regular',
   },
   profileName: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Bold',
   },
   logoutBtn: {
     padding: 6,
@@ -254,19 +214,17 @@ const styles = StyleSheet.create({
     height: 20,
     resizeMode: 'contain',
   },
-settingRowContainer: {
-  backgroundColor: '#fff',
-  borderRadius: 16,
-  padding: 16,
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 12,
-
-  // הוספה של פס דק:
-  borderWidth: 0.5,
-  borderColor: '#E0E0E0', // או כל צבע שתרצה, אפור בהיר מומלץ
-},
+  settingRowContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 0.5,
+    borderColor: '#E0E0E0',
+  },
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -282,21 +240,21 @@ settingRowContainer: {
     height: 22,
     resizeMode: 'contain',
   },
-deleteText: {
-  color: '#FF3B30',
-  fontFamily: 'Poppins-Regular',
-  marginTop: 10,
-  marginLeft: 4,
-  fontSize: 14,
-  textDecorationLine: 'underline',
-  alignSelf: 'flex-start',
-},
-modalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
+  deleteText: {
+    color: '#FF3B30',
+    fontFamily: 'Poppins-Regular',
+    marginTop: 10,
+    marginLeft: 4,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+    alignSelf: 'flex-start',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalBox: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -340,11 +298,11 @@ modalOverlay: {
     fontFamily: 'Poppins-Regular',
   },
   infoText: {
-  fontSize: 14,
-  color: '#333',
-  textAlign: 'center',
-  marginBottom: 16,
-  fontFamily: 'Poppins-Regular',
-  paddingHorizontal: 6,
-},
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontFamily: 'Poppins-Regular',
+    paddingHorizontal: 6,
+  },
 });
