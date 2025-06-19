@@ -14,19 +14,22 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUserData } from '../useUserData';
-import { fetchTickets } from '../ticketService';
+import { fetchUnifiedTickets } from '../ticketService';
 import { Ticket } from '../types';
 import { StatusBar } from 'react-native';
-
+import { useEffect } from 'react'; // כבר קיים אבל אם לא – לוודא
+ 
+ 
 const statusLabels = ['Active', 'Pending', 'Transferred', 'Used'] as const;
-
+ 
 export default function MyTicketsScreen() {
   const { tickets, setTickets } = useUserData();
   const [selectedStatus, setSelectedStatus] = useState<number>(0);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const rotateAnim = useRef(new Animated.Value(0)).current;
-
+ 
+const [showUploadModal, setShowUploadModal] = useState(false);
   const startRotation = () => {
     rotateAnim.setValue(0);
     Animated.loop(
@@ -48,7 +51,7 @@ export default function MyTicketsScreen() {
     try {
       setRefreshing(true);
       startRotation();
-      const updatedTickets = await fetchTickets();
+      const updatedTickets = await fetchUnifiedTickets();
       setTickets(updatedTickets);
     } catch (err) {
       console.error('Failed to refresh tickets', err);
@@ -57,12 +60,16 @@ export default function MyTicketsScreen() {
       setRefreshing(false);
     }
   };
-
+useEffect(() => {
+  refreshTickets(); // קריאה אחת ראשונית
+}, []);
   const groupedTickets = Object.values(
     tickets
       .filter((ticket) => Number(ticket.status) === selectedStatus)
       .reduce((acc, ticket) => {
-        const key = `${ticket.event.id}-${ticket.status}-${ticket.transactionId ?? 'none'}`;
+        const key = ticket.isExternal
+        ? `external-${ticket.id}` // לכל כרטיס אקסטרנל מפתח ייחודי
+        : `${ticket.event.id}-${ticket.status}-${ticket.transactionId ?? 'none'}`;
         if (!acc[key]) {
           acc[key] = {
             event: ticket.event,
@@ -85,15 +92,38 @@ export default function MyTicketsScreen() {
   const renderGroupedTicket = ({ item }: { item: typeof groupedTickets[0] }) => (
     <View style={styles.outerFrame}>
 <View style={styles.imageContainer}>
-  <Image source={{ uri: item.event.imageUrl }} style={styles.ticketImage} />
+<Image
+  source={
+    item.event?.imageUrl && item.event.imageUrl.trim() !== ''
+      ? { uri: item.event.imageUrl }
+      : require('../../assets/images/favicon.png') // שים כאן תמונה שאתה באמת רוצה
+  }
+  style={styles.ticketImage}
+/>
 
+
+{item.tickets[0].isExternal && (
+  <Text style={{ fontSize: 12, color: '#1b2b68', marginTop: 4, left:10}}>
+      Uploaded by user
+  </Text>
+)}
   {/* Date */}
-  <View style={styles.dateBox}>
-    <Text style={styles.dateDay}>{new Date(item.event.date).getDate()}</Text>
-    <Text style={styles.dateMonth}>
-      {new Date(item.event.date).toLocaleString('default', { month: 'short' }).toUpperCase()}
-    </Text>
-  </View>
+<View style={styles.dateBox}>
+  <Text style={styles.dateDay}>
+    {item.tickets[0].isExternal
+      ? item.event.date.split('/')[0] // "12" מתוך "12/02/2025"
+      : new Date(item.event.date).getDate()}
+  </Text>
+  <Text style={styles.dateMonth}>
+    {item.tickets[0].isExternal
+      ? (() => {
+          const [day, month, year] = item.event.date.split('/');
+          const date = new Date(`${year}-${month}-${day}`);
+          return date.toLocaleString('default', { month: 'long' }); // יוצא "February"
+        })()
+      : new Date(item.event.date).toLocaleString('default', { month: 'long' })}
+  </Text>
+</View>
 
   {/* NEW: Status tag */}
 <View
@@ -179,8 +209,11 @@ export default function MyTicketsScreen() {
           refreshing={refreshing}
           onRefresh={refreshTickets}
         />
+        
       )}
+ 
     </View>
+    
   );
 }
 

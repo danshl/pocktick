@@ -50,6 +50,8 @@ export default function RootLayout() {
           <Stack.Screen name="open-tickets-screen" options={{ headerShown: false }} />
           <Stack.Screen name="payment-success" options={{ headerShown: false }} />
           <Stack.Screen name="payment" options={{ headerShown: false }} />
+          <Stack.Screen name="external-upload" options={{ headerShown: false }} />
+          <Stack.Screen name="show-my-tickets" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />

@@ -23,7 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserData } from './useUserData';
-import { fetchTickets } from './ticketService';
+import { fetchUnifiedTickets } from './ticketService';
 import { ActivityIndicator } from 'react-native';
 import { Ticket } from './types';
 import * as Linking from 'expo-linking';
@@ -122,7 +122,7 @@ const handleCancelOffer = async () => {
     }
 
     Alert.alert('Success', 'The offer has been canceled.');
-    const updated = await fetchTickets();
+    const updated = await fetchUnifiedTickets();
     setTickets(updated);
     router.back();
   } catch (error) {
@@ -210,7 +210,7 @@ const buyold = async () => {
 
     const responseText = await response.text();
     if (response.ok) {
-      const updatedTickets = await fetchTickets();
+      const updatedTickets = await fetchUnifiedTickets();
       setTickets(updatedTickets);
       Alert.alert('Success', 'Ticket successfully purchased.', [
         { text: 'OK', onPress: () => router.back() }
@@ -254,7 +254,7 @@ const buyold = async () => {
       let message = 'Transfer failed.';
 
       if (response.ok) {
-        const updatedTickets = await fetchTickets();
+        const updatedTickets = await fetchUnifiedTickets();
         setTickets(updatedTickets); 
         Alert.alert('Success', 'Transfer initiated successfully.', [
           { text: 'OK', onPress: () => router.back() },

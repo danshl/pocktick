@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image as RNImage } from 'react-native';
 import { Video, ResizeMode} from 'expo-av';
 import { useRouter } from 'expo-router';
-import { fetchTickets } from './ticketService';
+import { fetchUnifiedTickets } from './ticketService';
 import { useUserData } from './useUserData';
 import type { Ticket } from './types';
 
@@ -16,7 +16,7 @@ export default function LoadScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const tickets = await fetchTickets();
+        const tickets = await fetchUnifiedTickets();
         setTickets(tickets);
 
         await Promise.all(tickets.map((t: Ticket) => RNImage.prefetch(t.event.imageUrl)));

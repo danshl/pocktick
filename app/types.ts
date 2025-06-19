@@ -5,19 +5,20 @@ export type Ticket = {
   status: number;
   ownerId: number;
   eventId: number;
-  transactionId?: number; // ✅ הוסף את זה
-  seatDescription: string,
-event: {
-  id: number;
-  name: string;
-  date: string;
-  location: string;
-  startTime: string;
-  gatesOpenTime: string;
-  notes?: string;
-  imageUrl: string;
-};
-
+  transactionId?: number;
+  seatDescription: string;
+  isExternal?: boolean; // ✅ שדה חדש
+  ticketCount?: number;
+  event: {
+    id: number;
+    name: string;
+    date: string;
+    location: string;
+    startTime: string;
+    gatesOpenTime: string;
+    notes?: string;
+    imageUrl: string;
+  };
   transferSource: {
     fullName: string;
     email: string;

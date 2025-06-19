@@ -21,7 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { Ticket } from './types';
-import { fetchTickets } from './ticketService';
+import { fetchUnifiedTickets } from './ticketService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserData } from './useUserData';
 import Modal from 'react-native-modal';
@@ -52,6 +52,91 @@ export default function TicketDetailsScreen() {
  useEffect(() => {
   AsyncStorage.getItem('userEmail').then(setUserEmail);
 }, []);
+
+const handleCancelTransfer = (transferId: number) => {
+  Alert.alert(
+    'Cancel Transfer',
+    'Are you sure you want to cancel this transfer?',
+    [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem('authToken');
+            const res = await fetch(
+              `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/cancel/${transferId}`,
+              {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (res.ok) {
+              Alert.alert('Success', 'Transfer cancelled successfully.');
+              fetchUnifiedTickets(); // ← ודא שהפונקציה קיימת
+            } else {
+              const text = await res.text();
+              Alert.alert('Error', text || 'Failed to cancel transfer.');
+            }
+          } catch (err) {
+            console.error(err);
+            Alert.alert('Error', 'An error occurred while cancelling the transfer.');
+          }
+        },
+      },
+    ],
+    { cancelable: true }
+  );
+};
+
+const handleBuyTransfer = (externalTransferId: number) => {
+  console.log(externalTransferId);
+  Alert.alert(
+    'Buy Tickets',
+    'Are you sure you want to complete this purchase?',
+    [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem('authToken');
+            const response = await fetch(
+              `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/start-external-payment?externalTransferId=${externalTransferId}`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+          await AsyncStorage.setItem('lastTransactionId', externalTransferId.toString());
+          await AsyncStorage.setItem('IsInternal', "false");
+          
+          const json = await response.json();
+          console.log(json);
+          if (response.ok && json.success && json.payment_page_link) {
+            console.log(json.payment_page_link);
+            router.push({
+              pathname: '/payment',
+              params: { url: json.payment_page_link },
+            });
+          } else {
+            Alert.alert('Error', 'Could not initiate payment.');
+          }
+        } catch (error) {
+          console.error('❌ Payment Error:', error);
+          Alert.alert('Error', 'Could not connect to server.');
+        }
+        },
+      },
+    ]
+  );
+};
 
 const fetchQrUrls = async () => {
   try {
@@ -145,7 +230,7 @@ const handleCancelOffer = async () => {
     }
 
     Alert.alert('Success', 'The offer has been canceled.');
-    const updated = await fetchTickets();
+    const updated = await fetchUnifiedTickets();
     setTickets(updated);
     router.back();
   } catch (error) {
@@ -181,7 +266,7 @@ const handleTransfer = async () => {
     let message = 'Transfer failed.';
 
     if (response.ok) {
-      const updatedTickets = await fetchTickets();
+      const updatedTickets = await fetchUnifiedTickets();
       setTickets(updatedTickets);
       Alert.alert('Success', 'Transfer initiated successfully.', [
         { text: 'OK', onPress: () => router.back() },
@@ -217,16 +302,27 @@ return (
 
       {/* Details row */}
       <View style={styles.detailsRow}>
-        <View style={[styles.detailItem, { flex: 1.4 }]}>
-          <Text style={styles.detailLabel}>Date</Text>
-          <Text style={styles.detailValue}>
-            {new Date(ticket.event.date).toLocaleDateString('he-IL', {
-              day: '2-digit',
-              month: '2-digit',
-              year: '2-digit',
-            })}
-          </Text>
-        </View>
+<View style={[styles.detailItem, { flex: 1.4 }]}>
+  <Text style={styles.detailLabel}>Date</Text>
+  <Text style={styles.detailValue}>
+    {(() => {
+      if (ticket.isExternal) {
+        const parts = ticket.event.date.split('/');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year.slice(-2)}`;
+        }
+        return ticket.event.date; // fallback
+      } else {
+        const date = new Date(ticket.event.date);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear().toString().slice(-2);
+        return `${day}.${month}.${year}`;
+      }
+    })()}
+  </Text>
+</View>
 
         <View style={[styles.detailItem, { flex: 2 }]}>
           <Text style={styles.detailLabel}>Location</Text>
@@ -238,10 +334,14 @@ return (
           <Text style={styles.detailValue}>₪{totalPrice}</Text>
         </View>
 
-        <View style={[styles.detailItem, styles.lastDetailItem, { flex: 1.4 }]}>
-          <Text style={styles.detailLabel}>Tickets</Text>
-          <Text style={styles.detailValue}>{selectedTickets.length}</Text>
-        </View>
+<View style={[styles.detailItem, styles.lastDetailItem, { flex: 1.4 }]}>
+  <Text style={styles.detailLabel}>Tickets</Text>
+  <Text style={styles.detailValue}>
+    {selectedTickets?.[0]?.isExternal
+      ? selectedTickets[0].ticketCount
+      : selectedTickets.length}
+  </Text>
+</View>
       </View>
 
       {/* Event title */}
@@ -310,28 +410,54 @@ return (
             >
               <Text style={styles.actionBtnText}>Transfer Ticket</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.qrBtn]}
-              onPress={() => {
-                fetchQrUrls();
-              }}
-            >
-              <Text style={styles.actionBtnText}>View QR</Text>
-            </TouchableOpacity>
+<TouchableOpacity
+  style={[styles.actionBtn, styles.qrBtn]}
+  onPress={() => {
+if (selectedTicket.isExternal) {
+  router.push({
+    pathname: '/open-tickets-screen',
+    params: { transferId: selectedTicket.id.toString() }, // לוודא שהוא מומר למחרוזת
+  });
+} else {
+      fetchQrUrls();
+    }
+  }}
+>
+  <Text style={styles.actionBtnText}>View QR</Text>
+</TouchableOpacity>
           </>
         )}
 
-        {selectedTicket.status === 1 && (
-          selectedTicket.transferSource === null ? (
-            <TouchableOpacity style={[styles.actionBtn, styles.transferBtn]} onPress={handleCancelOffer}>
-              <Text style={styles.actionBtnText}>Cancel Offer</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={[styles.actionBtn, styles.qrBtn]} onPress={handleBuy}>
-              <Text style={styles.actionBtnText}>Buy</Text>
-            </TouchableOpacity>
-          )
-        )}
+{selectedTicket.status === 1 && (
+  selectedTicket.transferSource === null ? (
+    <TouchableOpacity
+      style={[styles.actionBtn, styles.transferBtn]}
+      onPress={() => {
+        if (selectedTicket.isExternal) {
+          handleCancelTransfer(selectedTicket.id); // ← קריאה חדשה לכרטיס חיצוני
+        } else {
+          handleCancelOffer(); // ← רגיל לכרטיס פנימי
+        }
+      }}
+    >
+      <Text style={styles.actionBtnText}>Cancel Offer</Text>
+    </TouchableOpacity>
+  ) : (
+    <TouchableOpacity
+      style={[styles.actionBtn, styles.qrBtn]}
+      onPress={() => {
+        const ticket = selectedTickets[0];
+        if (ticket.isExternal) {
+          handleBuyTransfer(ticket.id);
+        } else {
+          handleBuy();
+        }
+      }}
+    >
+      <Text style={styles.actionBtnText}>Buy</Text>
+    </TouchableOpacity>
+  )
+)}
       </View>
     </ScrollView>
 
