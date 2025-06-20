@@ -49,7 +49,7 @@ export async function login(email: string, password: string) {
   });
 
   const result = await response.json();
-
+            console.log(result.token);
   if (!response.ok) {
     // נזרוק שגיאה שתכיל גם את הקוד וגם את ההודעה
     const error = new Error(result.message || 'Login failed') as Error & { status?: number };

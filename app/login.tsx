@@ -294,6 +294,8 @@ export default function LoginScreen() {
       const result = await login(email, password);
       await AsyncStorage.setItem('authToken', result.token);
       await AsyncStorage.setItem('userEmail', email);
+ 
+
       router.replace('/load-screen');
     } catch (error: any) {
       //console.error('Login error:', error);

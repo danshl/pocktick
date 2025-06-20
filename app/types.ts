@@ -22,5 +22,8 @@ export type Ticket = {
   transferSource: {
     fullName: string;
     email: string;
+    role: string;
+    priceToPay: string;
+    soldAt: string,
   } | null;
 };

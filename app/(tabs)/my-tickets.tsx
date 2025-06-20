@@ -90,38 +90,54 @@ export default function MyTicketsScreen() {
   const renderGroupedTicket = ({ item }: { item: typeof groupedTickets[0] }) => (
     <View style={styles.outerFrame}>
       <View style={styles.imageContainer}>
-        <Image
-          source={
-            item.event?.imageUrl && item.event.imageUrl.trim() !== ''
-              ? { uri: item.event.imageUrl }
-              : require('../../assets/images/favicon.png')
-          }
-          style={styles.ticketImage}
-        />
+<View style={{ position: 'relative' }}>
+  <Image
+    source={
+      item.event?.imageUrl && item.event.imageUrl.trim() !== ''
+        ? { uri: item.event.imageUrl }
+        : require('../../assets/images/favicon.png')
+    }
+    style={styles.ticketImage}
+  />
+  {item.status === 2 && (
+    <View style={styles.imageOverlay} />
+  )}
+</View>
         {item.tickets[0].isExternal && (
           <Text style={{ fontSize: 12, color: '#1b2b68', marginTop: 4, left: 10 }}>
             Uploaded by user
           </Text>
         )}
-        <View style={styles.dateBox}>
-          <Text style={styles.dateDay}>
-            {item.tickets[0].isExternal
-              ? item.event.date.split('/')[0]
-              : new Date(item.event.date).getDate()}
-          </Text>
-          <Text style={styles.dateMonth}>
-            {item.tickets[0].isExternal
-              ? (() => {
-                  const [day, month, year] = item.event.date.split('/');
-                  const date = new Date(`${year}-${month}-${day}`);
-                  return date.toLocaleString('default', { month: 'long' });
-                })()
-              : new Date(item.event.date).toLocaleString('default', { month: 'long' })}
-          </Text>
-        </View>
+<View style={styles.dateBox}>
+  {(() => {
+    const parts = item.event.date.split('/');
+    if (parts.length === 3) {
+      const [day, month, year] = parts;
+      const dateObj = new Date(`${year}-${month}-${day}`);
+      const isValid = !isNaN(dateObj.getTime());
+
+      if (isValid) {
+        return (
+          <>
+            <Text style={styles.dateDay}>{parseInt(day, 10)}</Text>
+            <Text style={styles.dateMonth}>
+              {dateObj.toLocaleString('en-US', { month: 'long' })} {/* או 'long' אם רוצים שם מלא */}
+            </Text>
+          </>
+        );
+      }
+    }
+
+    // fallback - תאריך לא תקין
+    return <Text style={styles.dateDay}>{item.event.date}</Text>;
+  })()}
+</View>
         <View
           style={[styles.statusContainer, {
-            backgroundColor: item.status === 1 ? '#FC803B' : '#4CAF50'
+            backgroundColor:
+            item.status === 1 ? '#FC803B' :  // Pending - כתום
+            item.status === 2 ? '#339CFF' : // Transferred - כחול
+            '#4CAF50'      
           }]}
         >
           <Text style={styles.statusText}>{statusLabels[item.status]}</Text>
@@ -134,7 +150,9 @@ export default function MyTicketsScreen() {
           <Text style={styles.locationText}>{item.event.location}</Text>
         </View>
         <View style={styles.ticketBottomRow}>
-          <Text style={styles.price}>${item.tickets[0].price}</Text>
+          <Text style={styles.price}>
+            {item.tickets.reduce((sum, t) => sum + t.price, 0)} ₪ 
+          </Text>
           <TouchableOpacity
             style={styles.detailsButton}
             onPress={() => router.push({ pathname: '/ticket-details', params: { tickets: JSON.stringify(item.tickets) } })}
@@ -243,7 +261,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     alignItems: 'center'
   },
-  dateDay: { fontSize: 18, fontFamily: 'Poppins-Bold', color: '#1D2B64' },
+  dateDay: { fontSize: 18, fontFamily: 'Poppins-Bold', color: '#1D2B64', marginBottom:-6 },
   dateMonth: { fontSize: 16, fontFamily: 'Poppins-Regular', color: '#1D2B64' },
   statusBadge: {
     position: 'absolute',
@@ -378,5 +396,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontFamily: 'Poppins-regular'
-  }
+  },
+  imageOverlay: {
+  ...StyleSheet.absoluteFillObject,
+  backgroundColor: 'rgba(255, 255, 255, 0.3)', // לבן שקוף
+  zIndex: 5,
+}
 });

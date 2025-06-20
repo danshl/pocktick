@@ -13,7 +13,7 @@ export default function PaymentSuccessScreen() {
       const token = await AsyncStorage.getItem('authToken');
       console.log(isInternal);
       if (!transactionId || !token) return;
-
+      console.log("handleVerification");
       const url = isInternal === 'true'
         ? `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/pay-plus/verify-payment?transactionId=${transactionId}`
         : `https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/verify-external-payment?transferId=${transactionId}`;
