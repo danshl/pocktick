@@ -10,6 +10,8 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
+  ScrollView
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +22,8 @@ export default function OpenTicketsScreen() {
   const [pressing, setPressing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [alreadyOpened, setAlreadyOpened] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -35,10 +39,7 @@ export default function OpenTicketsScreen() {
 
         if (res.ok) {
           const isOpened = await res.json();
-          if (isOpened) {
-            await openTickets(true);
-            return;
-          }
+          setAlreadyOpened(isOpened);
         }
       } catch (err) {
         console.error('Error checking if tickets are already opened', err);
@@ -66,6 +67,7 @@ export default function OpenTicketsScreen() {
 
       if (res.ok) {
         const data = await res.json();
+        console.log(data);
         router.replace({ pathname: '/show-my-tickets', params: { ticketUrls: JSON.stringify(data.ticketUrls) } });
       } else {
         const text = await res.text();
@@ -116,32 +118,79 @@ export default function OpenTicketsScreen() {
 
       <Image source={require('../assets/icons/logo_full_blue.png')} style={styles.logo} />
 
-      <Text style={styles.infoText}>
-        Once opened, the responsibility for the tickets is transferred to you. We recommend opening
-        them only shortly before the event.
-      </Text>
+      {alreadyOpened ? (
+        <>
+          <Text style={styles.infoText}>These tickets are already opened. You can view the QR codes now. Enjoy!</Text>
+          <TouchableOpacity
+            style={styles.holdCircleWrapper}
+            onPress={() => openTickets(true)}
+          >
+            {loading ? (
+              <ActivityIndicator size="large" color="#fff" />
+            ) : (
+              <Image source={require('../assets/icons/happiness.png')} style={styles.cursorIcon} />
+            )}
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.infoText}>
+            Once opened, the responsibility for the tickets is transferred to you. We recommend opening
+            them only shortly before the event.
+          </Text>
 
-      <Text style={styles.pressText}>Press & Hold 3 Seconds</Text>
+          <Text style={styles.pressText}>Press & Hold 3 Seconds</Text>
 
-      <Animated.View style={[styles.holdCircleWrapper, { transform: [{ scale }] }]}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.holdCircle}
-          onPressIn={startHold}
-          onPressOut={cancelHold}
-        >
-          {loading ? (
-            <ActivityIndicator size="large" color="#fff" />
-          ) : (
-            <Image source={require('../assets/icons/arrow-left.png')} style={styles.cursorIcon} />
-          )}
-        </TouchableOpacity>
-      </Animated.View>
+          <Animated.View style={[styles.holdCircleWrapper, { transform: [{ scale }] }]}>
+            <TouchableOpacity
+              activeOpacity={1}
+              style={styles.holdCircle}
+              onPressIn={startHold}
+              onPressOut={cancelHold}
+            >
+              {loading ? (
+                <ActivityIndicator size="large" color="#fff" />
+              ) : (
+                <Image source={require('../assets/icons/fingerprint.png')} style={styles.cursorIcon} />
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        </>
+      )}
 
-      <TouchableOpacity style={styles.helpBtn}>
-        <Image source={require('../assets/icons/arrow-left.png')} style={styles.helpIcon} />
-        <Text style={styles.helpText}>Why can't I see my tickets right now?</Text>
-      </TouchableOpacity>
+{!alreadyOpened && (
+  <>
+    <TouchableOpacity style={styles.helpBtn} onPress={() => setShowHelpModal(true)}>
+      <Image source={require('../assets/icons/info.png')} style={styles.helpIcon} />
+      <Text style={styles.helpText}>Why can't I see my tickets right now?</Text>
+    </TouchableOpacity>
+
+    <Modal
+      visible={showHelpModal}
+      animationType="slide"
+      transparent
+      onRequestClose={() => setShowHelpModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>Why can't I see my tickets?</Text>
+          <ScrollView>
+            <Text style={styles.modalText}>
+              Our system records the exact time you opened the ticket. If there's an issue entering the event,
+              we check the check-in timestamp recorded by the venue. If your opening time is after the official check-in,
+              you're fully protected and will get your money back. If the opening time is before check-in, we can't verify
+              your claim, so we recommend opening the ticket just a few seconds before the show starts.{"\n\n"}
+              Don't worry! We verify within 24 hours that the uploaded image matches the ticket description.
+            </Text>
+          </ScrollView>
+          <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowHelpModal(false)}>
+            <Text style={styles.modalCloseText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  </>
+)}
     </View>
   );
 }
@@ -150,7 +199,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Platform.OS === 'ios' ? 100 : 80,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
@@ -166,7 +215,7 @@ const styles = StyleSheet.create({
     tintColor: '#1D2B64',
   },
   logo: {
-    width: 180,
+    width: 280,
     height: 80,
     resizeMode: 'contain',
     marginTop: 20,
@@ -208,8 +257,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cursorIcon: {
-    width: 30,
-    height: 30,
+    width: 70,
+    height: 70,
     tintColor: '#d88d00',
   },
   helpBtn: {
@@ -230,5 +279,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Poppins-Bold',
     color: '#1D2B64',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '60%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+    color: '#1D2B64',
+    marginBottom: 12,
+  },
+  modalText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    color: '#444',
+    lineHeight: 22,
+  },
+  modalCloseBtn: {
+    marginTop: 20,
+    alignSelf: 'center',
+    backgroundColor: '#1D2B64',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontFamily: 'Poppins-Bold',
+    fontSize: 14,
   },
 });
