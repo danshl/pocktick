@@ -249,7 +249,7 @@ function formatDate(dateString: string) {
 }
 const handleTransfer = async () => {
   try {
-    console.log(selectedTicketIds);
+ 
     const token = await AsyncStorage.getItem('authToken');
     const response = await fetch(
       'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/transfer/initiate',
