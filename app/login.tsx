@@ -9,6 +9,7 @@ import {
   ImageSourcePropType,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import AppText from './AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -200,10 +201,12 @@ const Frame33377: React.FC<Frame33377Props> = ({
         </TouchableOpacity>
 
         <AppText style={styles.orText}>OR</AppText>
-        <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
-          <Image source={require('../assets/icons/apple.png')} style={styles.socialIcon} />
-          <AppText style={styles.socialText}>Login with Apple</AppText>
-        </TouchableOpacity>
+        {Platform.OS === 'ios' && (
+          <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
+            <Image source={require('../assets/icons/apple.png')} style={styles.socialIcon} />
+            <AppText style={styles.socialText}>Login with Apple</AppText>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.socialButton} onPress={signIn}>
           <Image source={require('../assets/icons/google.png')} style={styles.socialIcon} />
           <AppText style={styles.socialText}>Login with Google</AppText>

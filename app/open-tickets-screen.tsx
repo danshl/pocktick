@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import * as Linking from 'expo-linking';
 export default function OpenTicketsScreen() {
   const router = useRouter();
   const { transferId } = useLocalSearchParams();
@@ -67,8 +67,15 @@ export default function OpenTicketsScreen() {
 
       if (res.ok) {
         const data = await res.json();
-        console.log(data);
-        router.replace({ pathname: '/show-my-tickets', params: { ticketUrls: JSON.stringify(data.ticketUrls) } });
+        if (data.ticketUrls?.length > 0) {
+          await Linking.openURL(data.ticketUrls[0]);
+        } else {
+          Alert.alert('No tickets exist');
+        }
+
+//         const data = await res.json();
+//         await AsyncStorage.setItem('ticketUrls', JSON.stringify(data.ticketUrls));
+// router.replace('/show-my-tickets');
       } else {
         const text = await res.text();
         Alert.alert('Error', text || 'Failed to open tickets');

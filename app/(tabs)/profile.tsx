@@ -96,7 +96,10 @@ const handleConfirmDeleteRequest = async () => {
   if (loading) return <ActivityIndicator size="large" style={{ marginTop: 60 }} />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40, paddingTop: 75 }}>
+    <ScrollView
+  style={styles.container}
+  contentContainerStyle={{ paddingBottom: 40, paddingTop: 75, flexGrow: 1 }}
+>
       <Text style={styles.title}>Profile</Text>
 
       <View style={styles.profileCard}>
@@ -114,7 +117,8 @@ const handleConfirmDeleteRequest = async () => {
       <SettingRow icon="lock-closed-outline" text="Change Password" onPress={() => router.push('/change-password')} />
       <SettingRow icon="help-circle-outline" text="FAQs" onPress={() => router.push('/faqs')} />
       <SettingRow icon="checkmark-done-circle-outline" text="Seller Verification" onPress={() => router.push('/verify-seller')} />
-
+      <SettingRow icon="alert-circle-outline" text="Appeal a Ticket" onPress={() => router.push('/appeal-screen')}/>
+        
       <View style={styles.settingRowContainer}>
         <View style={styles.rowLeft}>
           <Image source={require('../../assets/icons/notification.png')} style={styles.iconImage} />

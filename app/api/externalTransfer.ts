@@ -35,7 +35,7 @@ export async function submitExternalTransfer(form: {
   formData.append('eventName', eventName);
   formData.append('seatLocation', seatLocation);
   formData.append('dateTime', dateTime);
-  formData.append('additionalDetails', additionalDetails || '');
+  formData.append('additionalDetails', additionalDetails || 'No comments');
   formData.append('ticketCount', ticketCount);
   formData.append('buyerEmail', buyerEmail);
   formData.append('price', price);
@@ -43,13 +43,23 @@ export async function submitExternalTransfer(form: {
   formData.append('startTime', startTime);
   formData.append('gatesOpenTime', gatesOpenTime);
 
-  fileUris.forEach((uri, index) => {
-    formData.append('ticketFiles', {
-      uri,
-      name: `ticket-${index + 1}.jpg`,
-      type: 'image/jpeg',
-    } as any);
-  });
+fileUris.forEach((uri, index) => {
+  const uriParts = uri.split('/');
+  const filename = uriParts[uriParts.length - 1];
+  const extension = filename?.split('.').pop()?.toLowerCase() || 'jpg';
+
+  let type = 'application/octet-stream';
+  if (extension === 'pdf') type = 'application/pdf';
+  else if (['jpg', 'jpeg'].includes(extension)) type = 'image/jpeg';
+  else if (extension === 'png') type = 'image/png';
+  else if (extension === 'webp') type = 'image/webp';
+
+  formData.append('ticketFiles', {
+    uri,
+    name: filename,
+    type,
+  } as any);
+});
 
   const res = await fetch(
     'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/submit',

@@ -50,6 +50,7 @@ export default function RootLayout() {
               <Stack.Screen name="SetNewPasswordScreen" options={{ headerShown: false }} />
               <Stack.Screen name="GoogleSignIn" options={{ headerShown: false }} />
               <Stack.Screen name="verify-seller" options={{ headerShown: false }} />
+              <Stack.Screen name="appeal-screen" options={{ headerShown: false }} />
               <Stack.Screen name="show-my-tickets" options={{ headerShown: false }} />
               <Stack.Screen name="payment-success" options={{ headerShown: false }} />
               <Stack.Screen name="payment" options={{ headerShown: false }} />

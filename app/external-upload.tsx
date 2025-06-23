@@ -1,4 +1,3 @@
-// ExternalUploadScreen.tsx
 
 import React, { useState } from 'react';
 import {
@@ -13,9 +12,11 @@ import {
   Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { submitExternalTransfer } from './api/externalTransfer';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function ExternalUploadScreen() {
   const router = useRouter();
@@ -30,19 +31,47 @@ export default function ExternalUploadScreen() {
   const [location, setLocation] = useState('');
   const [startTime, setStartTime] = useState('');
   const [gatesOpenTime, setGatesOpenTime] = useState('');
-  const [fileUris, setFileUris] = useState<string[]>([]);
+type FileItem = {
+  uri: string;
+  name: string;
+};
 
-  const pickFile = async () => {
+const [fileUris, setFileUris] = useState<FileItem[]>([]);
+const removeFile = (uriToRemove: string) => {
+  setFileUris(prev => prev.filter(file => file.uri !== uriToRemove));
+};
+
+  const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      Alert.alert('Permission denied', 'We need media library access to pick images.');
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setFileUris(prev => [...prev, result.assets[0].uri]);
+      setFileUris(prev => [...prev, { uri: result.assets[0].uri, name: result.assets[0].fileName || 'Image' }]);
+    }
+  };
+
+  const pickPdf = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.assets && result.assets.length > 0) {
+        setFileUris(prev => [...prev, { uri: result.assets[0].uri, name: result.assets[0].name || 'PDF' }]);
+      }
+    } catch (err) {
+      console.error('PDF pick error:', err);
+      Alert.alert('Error picking PDF');
     }
   };
 
@@ -78,55 +107,85 @@ export default function ExternalUploadScreen() {
         location,
         startTime,
         gatesOpenTime,
-        fileUris,
+        fileUris: fileUris.map(f => f.uri),
         token,
       });
 
       Alert.alert('Success', 'Transfer submitted successfully.');
       router.back();
     } catch (err: any) {
-      console.error(err);
-      Alert.alert('Error', err.message || 'An unexpected error occurred.');
+      //console.error(err);
+      Alert.alert('Submission Failed', 'Please make sure all fields are filled correctly.');
     }
   };
 
   return (
     <View style={styles.wrapper}>
       <View style={styles.whiteContainer}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+  <MaterialIcons name="arrow-back" size={28} color="#1D2B64" />
+</TouchableOpacity>
+<Image
+  source={require('../assets/icons/logo_full_blue.png')}
+  style={styles.headerImage}
+/>
         <ScrollView contentContainerStyle={styles.container}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backArrow}>←</Text>
+          <Text style={styles.sectionTitle}>Upload & Sell External Ticket</Text>
+
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Number of Tickets" value={ticketCount} onChangeText={setTicketCount} keyboardType="numeric" />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Event Name" value={eventName} onChangeText={setEventName} />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Seat Location" value={seatLocation} onChangeText={setSeatLocation} />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Buyer Email" value={buyerEmail} onChangeText={setBuyerEmail} />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Date & Time" value={dateTime} onChangeText={setDateTime} />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Location" value={location} onChangeText={setLocation} />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Start Time" value={startTime} onChangeText={setStartTime} />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Gates Open Time" value={gatesOpenTime} onChangeText={setGatesOpenTime} />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Price" value={price} onChangeText={setPrice} keyboardType="numeric" />
+          <TextInput style={styles.input} placeholderTextColor="#B0AFAF" placeholder="Additional Details" value={details} onChangeText={setDetails} multiline />
+
+          <Text style={styles.sectionTitle}>Upload Ticket File(s):</Text>
+
+<View style={styles.uploadButtonsRow}>
+  <TouchableOpacity style={styles.uploadBox} onPress={pickImage}>
+    <Text style={styles.uploadLabel}>Choose Image(s)</Text>
+    <Image source={require('../assets/icons/image-gallery.png')} style={styles.uploadIcon} />
+  </TouchableOpacity>
+
+  <View style={styles.orContainer}>
+    <Text style={styles.orText}>or</Text>
+  </View>
+
+  <TouchableOpacity style={styles.uploadBox} onPress={pickPdf}>
+    <Text style={styles.uploadLabel}>Choose PDF</Text>
+    <Image source={require('../assets/icons/pdf.png')} style={styles.uploadIcon} />
+  </TouchableOpacity>
+</View>
+
+{fileUris.length > 0 && (
+  <View style={styles.previewContainer}>
+    {fileUris.map((file, index) => {
+      const isPdf = file.name?.toLowerCase().endsWith('.pdf');
+
+      return (
+        <View key={index} style={isPdf ? styles.pdfItem : styles.previewItem}>
+          {isPdf ? (
+            <View style={styles.pdfRow}>
+              <Text style={styles.pdfText}>{file.name || `PDF ${index + 1}`}</Text>
+            </View>
+          ) : (
+            <Image source={{ uri: file.uri }} style={styles.previewImage} />
+          )}
+          <TouchableOpacity onPress={() => removeFile(file.uri)} style={styles.removeBtn}>
+            <Text style={styles.removeText}>×</Text>
           </TouchableOpacity>
-
-          <View style={styles.header}>
-            <Image source={require('../assets/icons/square.png')} style={styles.icon} />
-            <Text style={styles.title}>Upload & sell external ticket</Text>
-          </View>
-
-          <Text style={styles.sectionTitle}>Enter Buyer Details</Text>
-
-          <TextInput style={styles.input} placeholder="Number of Tickets" placeholderTextColor="#807A7A" keyboardType="numeric" value={ticketCount} onChangeText={setTicketCount} />
-          <TextInput style={styles.input} placeholder="Event Name" placeholderTextColor="#807A7A" value={eventName} onChangeText={setEventName} />
-          <TextInput style={styles.input} placeholder="Seat Location" placeholderTextColor="#807A7A" value={seatLocation} onChangeText={setSeatLocation} />
-          <TextInput style={styles.input} placeholder="Buyer Email" placeholderTextColor="#807A7A" value={buyerEmail} onChangeText={setBuyerEmail} />
-          <TextInput style={styles.input} placeholder="Date & Time" placeholderTextColor="#807A7A" value={dateTime} onChangeText={setDateTime} />
-          <TextInput style={styles.input} placeholder="Location" placeholderTextColor="#807A7A" value={location} onChangeText={setLocation} />
-          <TextInput style={styles.input} placeholder="Start Time" placeholderTextColor="#807A7A" value={startTime} onChangeText={setStartTime} />
-          <TextInput style={styles.input} placeholder="Gates Open Time" placeholderTextColor="#807A7A" value={gatesOpenTime} onChangeText={setGatesOpenTime} />
-          <TextInput style={styles.input} placeholder="Price" placeholderTextColor="#807A7A" keyboardType="numeric" value={price} onChangeText={setPrice} />
-          <TextInput style={styles.input} placeholder="Additional Details" placeholderTextColor="#807A7A" multiline value={details} onChangeText={setDetails} />
-
-          <TouchableOpacity style={styles.uploadBox} onPress={pickFile}>
-            <Text style={styles.uploadLabel}>Upload Ticket</Text>
-            <Image source={require('../assets/icons/square.png')} style={styles.uploadIcon} />
-          </TouchableOpacity>
+        </View>
+      );
+    })}
+  </View>
+)}
 
           <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit}>
-            <Text style={styles.saveText}>Save Transfer</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.cancel}>Cancel</Text>
+            <Text style={styles.saveText}>Submit</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -141,54 +200,56 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   whiteContainer: {
-    height: '90%',
+    height: '92%',
     backgroundColor: '#fff',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    overflow: 'hidden',
-    paddingTop: Platform.OS === 'ios' ? 30 : 30,
+    paddingTop: 24,
   },
   container: {
     padding: 24,
     paddingBottom: 60,
   },
-  backBtn: {
-    marginBottom: 10,
-  },
-  backArrow: {
-    fontSize: 22,
-    color: '#1D2B64',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  icon: {
-    width: 36,
-    height: 36,
-    marginBottom: 6,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1D2B64',
-    fontFamily: 'Poppins-SemiBold',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Bold',
-    color: '#222',
-    marginBottom: 12,
-    textAlign: 'left',
-  },
+ 
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 14,
     padding: 12,
     marginBottom: 12,
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular'
+  },
+  headerImage: {
+  width: '100%',
+  height: 150,
+  resizeMode: 'contain',
+  marginTop: 20,
+  marginBottom: 10,
+  alignSelf: 'center',
+},
+sectionTitle: {
+  fontSize: 14,
+  color: '#1D2B64',
+
+  marginBottom: 25,
+  fontFamily: 'Poppins-Regular',
+},
+  saveBtn: {
+    backgroundColor: '#1D2B64',
+    padding: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 0,
+  },
+  saveText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  uploadButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   uploadBox: {
     backgroundColor: '#FFF7D6',
@@ -197,36 +258,103 @@ const styles = StyleSheet.create({
     borderColor: '#FDB813',
     borderRadius: 14,
     padding: 16,
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    marginHorizontal: 5,
     flexDirection: 'row',
-    marginBottom: 20,
   },
   uploadLabel: {
     fontWeight: 'bold',
     color: '#333',
+    marginRight: 8,
   },
   uploadIcon: {
-    width: 24,
-    height: 24,
+    width: 25,
+    height: 25,
     tintColor: '#FDB813',
   },
-  saveBtn: {
-    backgroundColor: '#1D2B64',
-    padding: 16,
-    borderRadius: 14,
+  previewContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  previewItem: {
+    position: 'relative',
+    marginRight: 12,
+    marginBottom: 12,
+  },
+  previewImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  pdfBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FDB813',
+    backgroundColor: '#FFF7D6',
     alignItems: 'center',
-    marginBottom: 14,
+    justifyContent: 'center',
   },
-  saveText: {
+ 
+  removeBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#FF5252',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  removeText: {
     color: '#fff',
-    fontSize: 16,
-    fontFamily: 'Poppins-Bold',
-  },
-  cancel: {
-    color: '#999',
+    fontWeight: 'bold',
     fontSize: 14,
-    textAlign: 'center',
-    textDecorationLine: 'underline',
   },
+  orContainer: {
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 8,
+},
+
+orText: {
+  fontSize: 16,
+ 
+  color: '#1b2b68',
+      fontFamily: 'Poppins-Bold',
+},
+backButton: {
+  position: 'absolute',
+  top: Platform.OS === 'android' ? 20 : 20,
+  left: 20,
+  zIndex: 10,
+},
+pdfItem: {
+  width: '100%',
+  marginBottom: 12,
+  position: 'relative',
+},
+
+pdfRow: {
+  padding: 12,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: '#1b2b68',
+  backgroundColor: '#d9ecff',
+},
+
+pdfText: {
+  color: '#333',
+  fontWeight: '600',
+  fontSize: 14,
+},
 });
