@@ -188,19 +188,20 @@ export default function MyTicketsScreen() {
           </TouchableOpacity>
         ))}
       </View>
-      {groupedTickets.length === 0 ? (
-        <Text style={styles.emptyText}>No {statusLabels[selectedStatus]} tickets found.</Text>
-      ) : (
-        <FlatList
-          data={groupedTickets}
-          renderItem={renderGroupedTicket}
-          keyExtractor={item => `${item.event.id}-${item.status}-${item.transactionId ?? 'none'}-${item.tickets.map(t => t.id).join('-')}`}
-          contentContainerStyle={styles.ticketList}
-          showsVerticalScrollIndicator={false}
-          refreshing={refreshing}
-          onRefresh={refreshTickets}
-        />
-      )}
+<FlatList
+  data={groupedTickets}
+  renderItem={renderGroupedTicket}
+  keyExtractor={item => `${item.event.id}-${item.status}-${item.transactionId ?? 'none'}-${item.tickets.map(t => t.id).join('-')}`}
+  contentContainerStyle={styles.ticketList}
+  showsVerticalScrollIndicator={false}
+  refreshing={refreshing}
+  onRefresh={refreshTickets}
+  ListEmptyComponent={
+    <Text style={styles.emptyText}>
+      No {statusLabels[selectedStatus]} tickets found.
+    </Text>
+  }
+/>
     </View>
   );
 }

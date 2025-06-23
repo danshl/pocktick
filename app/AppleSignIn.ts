@@ -16,7 +16,7 @@ export default function useAppleLogin() {
       });
 
       const token = credential.identityToken;
-      const fullName = 'Israel Israeli';
+      const fullName = 'Israel Israeli'; // אתה יכול לשלוף מהcredential אם תרצה
 
       if (!token) {
         Alert.alert('Error', 'No token was received from Apple.');
@@ -41,7 +41,29 @@ export default function useAppleLogin() {
 
       await AsyncStorage.setItem('authToken', result.token);
       await AsyncStorage.setItem('userEmail', result.email);
-      router.replace('/load-screen');
+
+      // ✅ בדיקה אם המשתמש חתם על תנאי השימוש
+      const termsRes = await fetch(
+        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/has-accepted-terms',
+        {
+          headers: {
+            Authorization: `Bearer ${result.token}`,
+          },
+        }
+      );
+
+      const termsData = await termsRes.json();
+
+      if (!termsRes.ok) {
+        Alert.alert('Error', 'Failed to verify terms acceptance.');
+        return;
+      }
+
+      if (termsData.hasAccepted) {
+        router.replace('/load-screen');
+      } else {
+        router.replace('/accept-terms');
+      }
     } catch (e: any) {
       if (e.code === 'ERR_REQUEST_CANCELED') {
         // Silent cancel

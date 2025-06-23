@@ -289,33 +289,51 @@ export default function LoginScreen() {
   const { signIn } = useGoogleLogin();
   const { signInWithApple } = useAppleLogin();
 
-  const handleLogin = async () => {
-    try {
-      setError(false);
-      setIsLoading(true);
+const handleLogin = async () => {
+  try {
+    setError(false);
+    setIsLoading(true);
 
-      const result = await login(email, password);
-      await AsyncStorage.setItem('authToken', result.token);
-      await AsyncStorage.setItem('userEmail', email);
- 
+    const result = await login(email, password);
+    const token = result.token;
 
-      router.replace('/load-screen');
-    } catch (error: any) {
-      //console.error('Login error:', error);
+    // שמירה מקומית של הטוקן והאימייל
+    await AsyncStorage.setItem('authToken', token);
+    await AsyncStorage.setItem('userEmail', email);
 
-      if (error.status === 401 && error.message?.includes('verify your email')) {
-        Alert.alert('Email Not Verified', 'Please verify your email to continue.', [
-          { text: 'OK', onPress: () => router.push({ pathname: '/VerifyEmailScreen', params: { email } }) },
-        ]);
-      } else if (error.status === 400 && error.message?.toLowerCase().includes('too many')) {
-        Alert.alert('Too Many Attempts', 'Please try again in 15 minutes.');
-      } else {
-        setError(true);
-      }
-    } finally {
-      setIsLoading(false);
+    // בדיקה האם המשתמש חתם על תנאי השימוש
+    const termsRes = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/has-accepted-terms', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!termsRes.ok) {
+      throw new Error('Failed to check terms acceptance.');
     }
-  };
+
+    const termsData = await termsRes.json();
+
+    if (termsData.hasAccepted) {
+      router.replace('/load-screen');
+    } else {
+      router.replace('/accept-terms');
+    }
+  } catch (error: any) {
+    if (error.status === 401 && error.message?.includes('verify your email')) {
+      Alert.alert('Email Not Verified', 'Please verify your email to continue.', [
+        { text: 'OK', onPress: () => router.push({ pathname: '/VerifyEmailScreen', params: { email } }) },
+      ]);
+    } else if (error.status === 400 && error.message?.toLowerCase().includes('too many')) {
+      Alert.alert('Too Many Attempts', 'Please try again in 15 minutes.');
+    } else {
+      console.error('Login error:', error);
+      setError(true);
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword || !fullName) {

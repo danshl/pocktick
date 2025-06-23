@@ -57,6 +57,7 @@ export default function RootLayout() {
               <Stack.Screen name="external-upload" options={{ headerShown: false }} />
               <Stack.Screen name="open-tickets-screen" options={{ headerShown: false }} />
               <Stack.Screen name="TestBottomSheet" options={{ headerShown: false }} />
+              <Stack.Screen name="accept-terms" options={{ headerShown: false }} />
               <Stack.Screen name="+not-found" />
             </Stack>
             <StatusBar style="auto" />

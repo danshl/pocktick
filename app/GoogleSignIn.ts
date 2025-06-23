@@ -41,7 +41,29 @@ export default function useGoogleLogin() {
 
         await AsyncStorage.setItem('authToken', result.token);
         await AsyncStorage.setItem('userEmail', result.email);
-        router.replace('/load-screen');
+
+        // ✅ בדיקה אם חתם על תנאים
+        const termsRes = await fetch(
+          'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/has-accepted-terms',
+          {
+            headers: {
+              Authorization: `Bearer ${result.token}`,
+            },
+          }
+        );
+
+        const termsData = await termsRes.json();
+
+        if (!termsRes.ok) {
+          Alert.alert('Error', 'Failed to verify terms acceptance.');
+          return;
+        }
+
+        if (termsData.hasAccepted) {
+          router.replace('/load-screen');
+        } else {
+          router.replace('/accept-terms');
+        }
       }
     } catch (error: any) {
       let errorMsg = 'An unknown error occurred.';

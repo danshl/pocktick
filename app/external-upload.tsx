@@ -31,6 +31,7 @@ export default function ExternalUploadScreen() {
   const [location, setLocation] = useState('');
   const [startTime, setStartTime] = useState('');
   const [gatesOpenTime, setGatesOpenTime] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 type FileItem = {
   uri: string;
   name: string;
@@ -74,50 +75,63 @@ const removeFile = (uriToRemove: string) => {
       Alert.alert('Error picking PDF');
     }
   };
+const handleSubmit = async () => {
+  if (
+    !eventName ||
+    !seatLocation ||
+    !dateTime ||
+    !ticketCount ||
+    !buyerEmail ||
+    !price ||
+    !location ||
+    !startTime ||
+    !gatesOpenTime ||
+    fileUris.length === 0
+  ) {
+    Alert.alert('Missing Fields', 'Please fill in all required fields.');
+    return;
+  }
 
-  const handleSubmit = async () => {
-    if (
-      !eventName ||
-      !seatLocation ||
-      !dateTime ||
-      !ticketCount ||
-      !buyerEmail ||
-      !price ||
-      !location ||
-      !startTime ||
-      !gatesOpenTime ||
-      fileUris.length === 0
-    ) {
-      Alert.alert('Missing Fields', 'Please fill in all required fields.');
-      return;
-    }
+  Alert.alert(
+    'Confirm Service Fee',
+    'By continuing, you agree that 7% of the transaction amount will be charged as a service fee to support platform maintenance and operations.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'I Agree',
+        onPress: async () => {
+          try {
+            setIsSubmitting(true); // ⬅️ Disable the button after user agrees
+            const token = await AsyncStorage.getItem('authToken');
+            if (!token) throw new Error('Missing token');
 
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) throw new Error('Missing token');
+            await submitExternalTransfer({
+              eventName,
+              seatLocation,
+              dateTime,
+              additionalDetails: details,
+              ticketCount,
+              buyerEmail,
+              price,
+              location,
+              startTime,
+              gatesOpenTime,
+              fileUris: fileUris.map(f => f.uri),
+              token,
+            });
 
-      await submitExternalTransfer({
-        eventName,
-        seatLocation,
-        dateTime,
-        additionalDetails: details,
-        ticketCount,
-        buyerEmail,
-        price,
-        location,
-        startTime,
-        gatesOpenTime,
-        fileUris: fileUris.map(f => f.uri),
-        token,
-      });
-
-      Alert.alert('Success', 'Transfer submitted successfully.');
-      router.back();
-    } catch (err: any) {
-      //console.error(err);
-      Alert.alert('Submission Failed', 'Please make sure all fields are filled correctly.');
-    }
-  };
+            Alert.alert('Success', 'Transfer submitted successfully.');
+            router.back();
+          } catch (err) {
+            Alert.alert('Submission Failed', 'Please make sure all fields are filled correctly.');
+          } finally {
+            setIsSubmitting(false); // Re-enable button
+          }
+        },
+      },
+    ]
+  );
+};
 
   return (
     <View style={styles.wrapper}>
@@ -184,9 +198,18 @@ const removeFile = (uriToRemove: string) => {
   </View>
 )}
 
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit}>
-            <Text style={styles.saveText}>Submit</Text>
-          </TouchableOpacity>
+<TouchableOpacity
+  style={[
+    styles.saveBtn,
+    { opacity: isSubmitting ? 0.5 : 1 },
+  ]}
+  onPress={handleSubmit}
+  disabled={isSubmitting}
+>
+  <Text style={styles.saveText}>
+    {isSubmitting ? 'Submitting...' : 'Submit'}
+  </Text>
+</TouchableOpacity>
         </ScrollView>
       </View>
     </View>
