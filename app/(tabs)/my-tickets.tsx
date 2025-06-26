@@ -446,7 +446,7 @@ singleFilterWrapper: {
 filterButton: {
   backgroundColor: '#FFC107', // צהוב
   paddingHorizontal: 20,
-  paddingVertical: 10,
+  paddingVertical: 8,
   borderRadius: 30,
   elevation: 3,
   shadowColor: '#000',
