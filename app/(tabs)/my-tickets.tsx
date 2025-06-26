@@ -15,14 +15,16 @@ import { useRouter } from 'expo-router';
 import { useUserData } from '../useUserData';
 import { fetchUnifiedTickets } from '../ticketService';
 import { Ticket } from '../types';
+import { Modal, Pressable } from 'react-native'; // תוספת
 
-const statusLabels = ['Active', 'Pending', 'Transferred', 'Used'] as const;
+const statusLabels = ['All', 'Active', 'Pending', 'Transferred', 'Used'] as const;
 
 export default function MyTicketsScreen() {
   const { tickets, setTickets } = useUserData();
-  const [selectedStatus, setSelectedStatus] = useState<number>(0);
+  const [selectedStatus, setSelectedStatus] = useState<number>(0);  
   const [refreshing, setRefreshing] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [statusMenuVisible, setStatusMenuVisible] = useState(false);
   const router = useRouter();
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -63,7 +65,7 @@ export default function MyTicketsScreen() {
 
   const groupedTickets = Object.values(
     tickets
-      .filter(ticket => Number(ticket.status) === selectedStatus)
+      .filter(ticket => selectedStatus === 0 || Number(ticket.status) === selectedStatus - 1)
       .reduce((acc, ticket) => {
         const key = ticket.isExternal
           ? `external-${ticket.id}`
@@ -140,7 +142,7 @@ export default function MyTicketsScreen() {
             '#4CAF50'      
           }]}
         >
-          <Text style={styles.statusText}>{statusLabels[item.status]}</Text>
+          <Text style={styles.statusText}>{statusLabels[item.status+1]}</Text>
         </View>
       </View>
       <View style={styles.detailsContainer}>
@@ -177,17 +179,49 @@ export default function MyTicketsScreen() {
           <Image source={require('../../assets/icons/notfic.png')} style={styles.iconImage} />
         </TouchableOpacity>
       </View>
-      <View style={styles.tabBarWrapper}>
+<View style={styles.singleFilterWrapper}>
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={() => setStatusMenuVisible(true)}
+      >
+<View style={styles.filterButtonContent}>
+  <Image
+    source={require('../../assets/icons/filter-4.png')}  
+    style={styles.filterButtonIcon}
+  />
+  <Text style={styles.filterButtonText}>
+    {statusLabels[selectedStatus]}
+  </Text>
+</View>
+      </TouchableOpacity>
+
+  <Modal
+    transparent
+    visible={statusMenuVisible}
+    animationType="fade"
+    onRequestClose={() => setStatusMenuVisible(false)}
+  >
+    <TouchableOpacity
+      style={styles.modalOverlay}
+      onPress={() => setStatusMenuVisible(false)}
+    >
+      <View style={styles.modalMenu}>
         {statusLabels.map((label, index) => (
-          <TouchableOpacity
+          <Pressable
             key={index}
-            onPress={() => setSelectedStatus(index)}
-            style={[styles.tabButton, selectedStatus === index && styles.tabButtonActive]}
+            style={styles.menuItem}
+            onPress={() => {
+              setSelectedStatus(index);
+              setStatusMenuVisible(false);
+            }}
           >
-            <Text style={[styles.tabText, selectedStatus === index && styles.tabTextActive]}>{label}</Text>
-          </TouchableOpacity>
+            <Text style={styles.menuItemText}>{label}</Text>
+          </Pressable>
         ))}
       </View>
+    </TouchableOpacity>
+  </Modal>
+</View>
 <FlatList
   data={groupedTickets}
   renderItem={renderGroupedTicket}
@@ -402,5 +436,66 @@ const styles = StyleSheet.create({
   ...StyleSheet.absoluteFillObject,
   backgroundColor: 'rgba(255, 255, 255, 0.3)', // לבן שקוף
   zIndex: 5,
-}
+},
+singleFilterWrapper: {
+  marginTop: -20,
+  marginBottom: 20,
+  paddingHorizontal: 20, // כדי שיישב בקו של האלמנטים האחרים
+  alignItems: 'flex-start', // מיושר שמאלה
+  zIndex: 10
+},
+filterButton: {
+  backgroundColor: '#FFC107', // צהוב
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  borderRadius: 30,
+  elevation: 3,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2
+},
+filterButtonText: {
+  fontFamily: 'Poppins-Regular',
+  color: '#1D2B64',
+  fontSize: 16
+},
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.3)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+modalMenu: {
+  backgroundColor: '#fff',
+  borderRadius: 10,
+  padding: 12,
+  width: 250,
+  elevation: 5,
+},
+menuItem: {
+  paddingVertical: 12,
+  borderBottomColor: '#ddd',
+  borderBottomWidth: 1,
+},
+menuItemText: {
+  fontSize: 16,
+  color: '#1D2B64',
+  textAlign: 'center',
+  fontFamily: 'Poppins-Regular',
+},
+filterButtonContent: {
+  flexDirection: 'row',
+  alignItems: 'center', // שמירה על אמצע
+  justifyContent: 'flex-start',
+  overflow: 'visible',       // מונע חיתוך
+  paddingVertical: 2,        // מוסיף רווח פנימי אנכי
+},
+filterButtonIcon: {
+  width: 20,
+  height: 20,
+  resizeMode: 'contain',     // מוודא שהתמונה לא נמתחת או נחתכת
+  marginRight: 8,
+  marginLeft: 0,
+},
 });
