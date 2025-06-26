@@ -123,14 +123,13 @@ export default function MyTicketsScreen() {
           <>
             <Text style={styles.dateDay}>{parseInt(day, 10)}</Text>
             <Text style={styles.dateMonth}>
-              {dateObj.toLocaleString('en-US', { month: 'long' })} {/* או 'long' אם רוצים שם מלא */}
+              {dateObj.toLocaleString('en-US', { month: 'long' })} {}
             </Text>
           </>
         );
       }
     }
 
-    // fallback - תאריך לא תקין
     return <Text style={styles.dateDay}>{item.event.date}</Text>;
   })()}
 </View>

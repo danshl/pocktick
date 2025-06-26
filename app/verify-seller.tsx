@@ -21,7 +21,8 @@ export default function VerifySellerScreen() {
   const [additionalIdUri, setAdditionalIdUri] = useState<string | null>(null);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [status, setStatus] = useState<'not_submitted' | 'submitted' | 'approved' | 'rejected'>('not_submitted');
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const pickFile = async (type: 'image' | 'video', setter: (uri: string) => void) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: type === 'image' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
@@ -46,11 +47,14 @@ export default function VerifySellerScreen() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!facebookLink || !idImageUri || !additionalIdUri) {
-      Alert.alert('Missing Info', 'Please fill all fields and upload all files.');
-      return;
-    }
+const handleSubmit = async () => {
+  if (!facebookLink || !idImageUri || !additionalIdUri) {
+    Alert.alert('Missing Info', 'Please fill all fields and upload all files.');
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
     const token = await AsyncStorage.getItem('authToken');
     const formData = new FormData();
     formData.append('facebookUrl', facebookLink);
@@ -69,7 +73,12 @@ export default function VerifySellerScreen() {
     } else {
       Alert.alert('Error', 'Submission failed. Try again.');
     }
-  };
+  } catch (e) {
+    Alert.alert('Error', 'Unexpected error. Try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   useEffect(() => {
     fetchStatus();
@@ -132,13 +141,15 @@ export default function VerifySellerScreen() {
             /> */}
           </View>
 
-          <TouchableOpacity
-            style={[styles.submitButton, disabled && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={disabled}
-          >
-            <Text style={styles.submitText}>Submit</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.submitButton, (disabled || isSubmitting) && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={disabled || isSubmitting}
+        >
+          <Text style={styles.submitText}>
+            {isSubmitting ? 'Submitting…' : 'Submit'}
+          </Text>
+        </TouchableOpacity>
 
           {status === 'submitted' && (
             <View style={styles.pendingBox}>
