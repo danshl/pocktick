@@ -19,6 +19,7 @@ import useGoogleLogin from './GoogleSignIn';
 import { login } from './api/auth';
 import { registerUser } from './api/auth';
 import useAppleLogin from './AppleSignIn';
+import { handleToken } from './tokenUtils';
 
 const TitleBar2 = () => (
   <View style={styles.titleBar} />
@@ -211,9 +212,10 @@ const Frame33377: React.FC<Frame33377Props> = ({
           <Image source={require('../assets/icons/google.png')} style={styles.socialIcon} />
           <AppText style={styles.socialText}>Login with Google</AppText>
         </TouchableOpacity>
-        <AppText style={styles.bottomText}>
-          Don’t have an account? <AppText style={styles.link}>Sign up</AppText>
-        </AppText>
+<AppText style={styles.bottomText}>
+  Don’t have an account?{' '}
+  <Text style={styles.link} onPress={() => setSelectedTab('signup')}>Sign up</Text>
+</AppText>
       </>
     ) : (
       <>
@@ -264,9 +266,10 @@ const Frame33377: React.FC<Frame33377Props> = ({
             />
           </View>
         </TouchableOpacity>
-        <AppText style={styles.bottomText}>
-          Already have an account? <AppText style={styles.link}>Log Up</AppText>
-        </AppText>
+<AppText style={styles.bottomText}>
+  Already have an account?{' '}
+  <Text style={styles.link} onPress={() => setSelectedTab('login')}>Log In</Text>
+</AppText>
       </>
     )}
   </View>
@@ -298,8 +301,7 @@ const handleLogin = async () => {
     const token = result.token;
 
     // שמירה מקומית של הטוקן והאימייל
-    await AsyncStorage.setItem('authToken', token);
-    await AsyncStorage.setItem('userEmail', email);
+    handleToken(result.token,result.email);
 
     // בדיקה האם המשתמש חתם על תנאי השימוש
     const termsRes = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/has-accepted-terms', {

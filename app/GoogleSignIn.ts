@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { handleToken } from './tokenUtils';
 
 GoogleSignin.configure({
   webClientId: '1087486296114-p6rqrktpn5o4n487bpgm7gv8otco82tr.apps.googleusercontent.com',
@@ -39,8 +40,7 @@ export default function useGoogleLogin() {
           return;
         }
 
-        await AsyncStorage.setItem('authToken', result.token);
-        await AsyncStorage.setItem('userEmail', result.email);
+        handleToken(result.token,result.email);
 
         // ✅ בדיקה אם חתם על תנאים
         const termsRes = await fetch(

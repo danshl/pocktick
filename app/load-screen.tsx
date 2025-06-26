@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image as RNImage } from 'react-native';
-import { Video, ResizeMode} from 'expo-av';
+import { View, StyleSheet, Image as RNImage } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { useRouter } from 'expo-router';
 import { fetchUnifiedTickets } from './ticketService';
 import { useUserData } from './useUserData';
@@ -13,14 +13,13 @@ export default function LoadScreen() {
   const [videoDone, setVideoDone] = useState(false);
   const videoRef = useRef<Video>(null);
 
+  // טוען מידע מראש
   useEffect(() => {
     const load = async () => {
       try {
         const tickets = await fetchUnifiedTickets();
         setTickets(tickets);
-
         await Promise.all(tickets.map((t: Ticket) => RNImage.prefetch(t.event.imageUrl)));
-
         setIsReady(true);
       } catch (err) {
         console.error('Error loading tickets:', err);
@@ -31,6 +30,17 @@ export default function LoadScreen() {
     load();
   }, []);
 
+  // fallback אחרי 4 שניות אם הסרטון לא מסיים
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isReady) {
+        setVideoDone(true); // מתנהג כאילו הסרטון סיים
+      }
+    }, 4000);
+    return () => clearTimeout(timeout);
+  }, [isReady]);
+
+  // מעבר אחרי ש-2 התנאים מתקיימים
   useEffect(() => {
     if (isReady && videoDone) {
       router.replace('/(tabs)/my-tickets');
@@ -39,19 +49,23 @@ export default function LoadScreen() {
 
   return (
     <View style={styles.container}>
-<Video
-  ref={videoRef}
-  source={require('../assets/videos/splash.mp4')}
-  style={styles.video}
-  isMuted
-  shouldPlay
-  resizeMode={ResizeMode.COVER}
-  onPlaybackStatusUpdate={(status) => {
-    if ('isLoaded' in status && status.isLoaded && status.didJustFinish && !status.isLooping) {
-      setVideoDone(true);
-    }
-  }}
-/>
+      <Video
+        ref={videoRef}
+        source={require('../assets/videos/splash.mp4')}
+        style={styles.video}
+        isMuted
+        shouldPlay
+        resizeMode={ResizeMode.COVER}
+        onError={(e) => {
+          console.error('Video error:', e);
+          setVideoDone(true); // fallback במידה והווידאו לא עובד
+        }}
+        onPlaybackStatusUpdate={(status) => {
+          if ('isLoaded' in status && status.isLoaded && status.didJustFinish && !status.isLooping) {
+            setVideoDone(true);
+          }
+        }}
+      />
     </View>
   );
 }
@@ -69,16 +83,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    bottom: 100,
-  },
-  loadingText: {
-    color: '#000', // ← טקסט שחור (כי הרקע לבן)
-    marginTop: 12,
-    fontSize: 16,
   },
 });

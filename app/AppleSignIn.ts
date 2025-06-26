@@ -2,6 +2,7 @@ import { Alert } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { handleToken } from './tokenUtils';
 
 export default function useAppleLogin() {
   const router = useRouter();
@@ -39,8 +40,8 @@ export default function useAppleLogin() {
         return;
       }
 
-      await AsyncStorage.setItem('authToken', result.token);
-      await AsyncStorage.setItem('userEmail', result.email);
+      handleToken(result.token,result.email);
+
 
       // ✅ בדיקה אם המשתמש חתם על תנאי השימוש
       const termsRes = await fetch(
