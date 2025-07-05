@@ -1,29 +1,41 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  I18nManager,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import useTranslation from './i18n/useTranslation';
 
 export default function AppealScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appeal Ticket</Text>
-      </View>
+      {/* חץ חזור צמוד לצד */}
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={[
+          styles.backButton,
+          I18nManager.isRTL ? { left: 20 } : { right: 20 },
+        ]}
+      >
+        <Image
+          source={require('../assets/icons/arrow-left.png')}
+          style={[
+            styles.backIcon,
+            I18nManager.isRTL && { transform: [{ rotate: '180deg' }] },
+          ]}
+        />
+      </TouchableOpacity>
 
       <View style={styles.content}>
         <Image source={require('../assets/images/name.png')} style={styles.image} />
-        <Text style={styles.description}>
-          This screen is intended for appealing issues related to external tickets.
-          {'\n\n'}
-          The system is currently under development.
-          Please contact us by email with a description of the issue you experienced,
-          and our team will get back to you as soon as possible.
-        </Text>
+        <Text style={styles.description}>{t('appealDescription')}</Text>
         <Text selectable style={styles.email}>appeals@pocktick.com</Text>
       </View>
     </View>
@@ -35,25 +47,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  header: {
-    backgroundColor: '#1D2B64',
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   backButton: {
-    marginRight: 12,
+    position: 'absolute',
+    top: 65,
+    zIndex: 1,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontFamily: 'Poppins-Bold',
-    color: '#fff',
+  backIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+    tintColor: '#1D2B64',
   },
   content: {
     padding: 24,
     alignItems: 'center',
+    marginTop: 120,
   },
   image: {
     width: 180,

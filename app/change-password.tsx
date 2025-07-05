@@ -8,13 +8,17 @@ import {
   Image,
   Alert,
   Switch,
+  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { changePassword } from './api/auth';
+import useTranslation from './i18n/useTranslation';
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,12 +28,12 @@ export default function ChangePasswordScreen() {
 
   const handlePasswordChange = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'All fields are required.');
+      Alert.alert(t('error'), t('allFieldsRequired'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New passwords do not match.');
+      Alert.alert(t('error'), t('passwordsDoNotMatch'));
       return;
     }
 
@@ -37,23 +41,23 @@ export default function ChangePasswordScreen() {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) throw new Error('Missing token');
       await changePassword(currentPassword, newPassword, token);
-      Alert.alert('Success', 'Password changed successfully!');
+      Alert.alert(t('success'), t('passwordChanged'));
       router.back();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Something went wrong.');
+      Alert.alert(t('error'), err.message || t('somethingWentWrong'));
     }
   };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Image source={require('../assets/icons/arrow-left.png')} style={styles.backIcon} />
+        <Image source={require('../assets/icons/arrow-left.png')} style={[styles.backIcon,I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]} />
       </TouchableOpacity>
 
-      <Text style={styles.title}>Change Password</Text>
+      <Text style={styles.title}>{t('changePasswordTitle')}</Text>
 
       <LabelledInput
-        label="Password"
+        label={t('currentPassword')}
         value={currentPassword}
         onChangeText={setCurrentPassword}
         secureTextEntry={secureCurrent}
@@ -61,7 +65,7 @@ export default function ChangePasswordScreen() {
       />
 
       <LabelledInput
-        label="New Password"
+        label={t('newPassword')}
         value={newPassword}
         onChangeText={setNewPassword}
         secureTextEntry={secureNew}
@@ -69,7 +73,7 @@ export default function ChangePasswordScreen() {
       />
 
       <LabelledInput
-        label="Repeat New Password"
+        label={t('repeatNewPassword')}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry={secureNew}
@@ -84,20 +88,20 @@ export default function ChangePasswordScreen() {
             trackColor={{ false: '#ccc', true: '#1D2B64' }}
             thumbColor="#fff"
           />
-          <Text style={styles.rememberText}>Remember Me</Text>
+          <Text style={styles.rememberText}>{t('rememberMe')}</Text>
         </View>
         <TouchableOpacity onPress={() => router.push('/ForgotPasswordScreen')}>
-          <Text style={styles.forgotText}>Forgot Password?</Text>
+          <Text style={styles.forgotText}>{t('forgotPassword')}</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.confirmButton} onPress={handlePasswordChange}>
         <View style={styles.arrowSpacer} />
-        <Text style={styles.confirmText}>Confirm</Text>
+        <Text style={styles.confirmText}>{t('confirm')}</Text>
         <View style={styles.arrowCircle}>
           <Image
             source={require('../assets/icons/next_white.png')}
-            style={styles.arrowIconImage}
+            style={[styles.arrowIconImage, I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]}
           />
         </View>
       </TouchableOpacity>
@@ -147,21 +151,24 @@ function LabelledInput({
     </View>
   );
 }
+
+// סגנונות - נשארו כמו בקוד שלך
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-    paddingTop: 60,
-  },
+  container: { flex: 1, backgroundColor: '#fff', padding: 20, paddingTop: 60 },
   confirmButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1D2B64',
-    height: 60,
-    borderRadius: 30,
-    paddingHorizontal: 20,
+ 
+  backgroundColor: '#1D2B64',
+  borderRadius: 20,
+  height: 56,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingVertical: 14,
+  paddingHorizontal: 20,
+  width: 335,
+  alignSelf: 'center',
+  marginTop: 10,
+ 
   },
   confirmText: {
     color: '#fff',
@@ -170,10 +177,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
   },
-  arrowSpacer: {
-    width: 40,
-    height: 40,
-  },
+  arrowSpacer: { width: 40, height: 40 },
   arrowCircle: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 20,
@@ -188,10 +192,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     tintColor: '#fff',
   },
-  backArrow: {
-    fontSize: 28,
-    color: '#1D2B64',
-  },
+  backArrow: { fontSize: 28, color: '#1D2B64' },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -210,53 +211,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     height: 50,
   },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  eyeIcon: {
-    fontSize: 18,
-    color: '#1D2B64',
-  },
+  input: { flex: 1, fontSize: 16, color: '#333' },
+  eyeIcon: { fontSize: 18, color: '#1D2B64' },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 30,
   },
-  rowStart: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rememberText: {
-    marginLeft: 10,
-    color: '#1D2B64',
-    fontWeight: '500',
-  },
-  forgotText: {
-    color: '#1D2B64',
-    textDecorationLine: 'underline',
-  },
-  arrowIcon: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  iconLabel: {
-    width: 18,
-    height: 18,
-    marginRight: 6,
-    resizeMode: 'contain',
-  },
-  iconEye: {
-    width: 22,
-    height: 22,
-    resizeMode: 'contain',
-  },
-  backButton: {
-    marginBottom: 20,
-    left: 10,
-  },
+  rowStart: { flexDirection: 'row', alignItems: 'center' },
+  rememberText: { marginLeft: 10, color: '#1D2B64', fontWeight: '500' },
+  forgotText: { color: '#1D2B64', textDecorationLine: 'underline' },
+  arrowIcon: { color: '#fff', fontSize: 16 },
+  iconLabel: { width: 18, height: 18, marginRight: 6, resizeMode: 'contain' },
+  iconEye: { width: 22, height: 22, resizeMode: 'contain' },
+  backButton: { marginBottom: 20, left: 10 },
   backIcon: {
     width: 24,
     height: 24,
@@ -271,9 +240,5 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 1,
   },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
+  labelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
 });

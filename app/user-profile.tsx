@@ -7,13 +7,17 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  I18nManager,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import CustomAlert from './CustomAlert';
+import useTranslation from './i18n/useTranslation';
 
 export default function UserProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -35,97 +39,153 @@ export default function UserProfileScreen() {
     })();
   }, []);
 
-const handleSave = async () => {
-  const token = await AsyncStorage.getItem('authToken');
-  const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/update-profile', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ fullName, phoneNumber }),
-  });
+  const handleSave = async () => {
+    const token = await AsyncStorage.getItem('authToken');
+    const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/users/update-profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ fullName, phoneNumber }),
+    });
 
-  const data = await res.json();
-  if (res.ok) {
-    setAlertMessage('Profile saved!');
-    setShowAlert(true);
-    await AsyncStorage.setItem('userEmail', email);
-  } else {
-    setAlertMessage(data.message || 'Error updating profile');
-    setShowAlert(true);
-  }
-};
-
+    const data = await res.json();
+    if (res.ok) {
+      setAlertMessage(t('profileSaved'));
+      setShowAlert(true);
+      await AsyncStorage.setItem('userEmail', email);
+    } else {
+      setAlertMessage(data.message || t('updateError'));
+      setShowAlert(true);
+    }
+  };
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={styles.container}>
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Image source={require('../assets/icons/arrow-left.png')} style={styles.backIcon} />
+        <Image
+          source={require('../assets/icons/arrow-left.png')}
+          style={[styles.backIcon, I18nManager.isRTL && { transform: [{ rotate: '180deg' }] }]}
+        />
       </TouchableOpacity>
 
-      <Text style={styles.title}>User Profile</Text>
+      <Text style={styles.title}>{t('userProfileTitle')}</Text>
 
       <Image source={require('../assets/icons/account.png')} style={styles.avatar} />
       <Text style={styles.name}>{fullName}</Text>
 
-      {/* Full Name */}
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}><Image source={require('../assets/icons/user.png')} style={styles.icon} /> Full Name</Text>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            value={fullName}
-            onChangeText={setFullName}
-          />
+<View style={styles.fieldGroup}>
+  <View style={[styles.labelRow, { flexDirection: 'row', alignItems: 'center' }]}>
+    <Image
+      source={require('../assets/icons/user.png')}
+      style={[
+        styles.icon,
+        I18nManager.isRTL ? { marginLeft: 6 } : { marginRight: 6 },
+      ]}
+    />
+    <Text
+      style={[
+        styles.label,
+        I18nManager.isRTL && { textAlign: 'right', writingDirection: 'rtl' },
+      ]}
+    >
+      {t('fullName')}
+    </Text>
+  </View>
+  <View style={styles.inputWrapper}>
+    <TextInput
+      style={[
+        styles.input,
+        I18nManager.isRTL && { textAlign: 'right', writingDirection: 'rtl' },
+      ]}
+      value={fullName}
+      onChangeText={setFullName}
+    />
+  </View>
+</View>
 
-        </View>
-      </View>
+<View style={styles.fieldGroup}>
+  <View style={[styles.labelRow, { flexDirection: 'row', alignItems: 'center' }]}>
+    <Image
+      source={require('../assets/icons/Message.png')}
+      style={[
+        styles.icon,
+        I18nManager.isRTL ? { marginLeft: 6 } : { marginRight: 6 },
+      ]}
+    />
+    <Text
+      style={[
+        styles.label,
+        { marginTop: 4 }, // ⬅️ זו השורה שמיישרת את הטקסט לגובה האייקון
+        I18nManager.isRTL && { textAlign: 'right', writingDirection: 'rtl' },
+      ]}
+    >
+      {t('email')}
+    </Text>
+  </View>
 
-      {/* Email */}
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}><Image source={require('../assets/icons/Message.png')} style={styles.icon} /> Email</Text>
-        <View style={[styles.inputWrapper, styles.disabledWrapper]}>
-          <TextInput
-            style={[styles.input, styles.disabledInput]}
-            value={email}
-            editable={false}
-          />
-         
-        </View>
-      </View>
+  <View style={[styles.inputWrapper, styles.disabledWrapper]}>
+    <TextInput
+      style={[
+        styles.input,
+        styles.disabledInput,
+        I18nManager.isRTL && { textAlign: 'right', writingDirection: 'rtl' },
+      ]}
+      value={email}
+      editable={false}
+    />
+  </View>
+</View>
 
-      {/* Phone */}
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}><Image source={require('../assets/icons/phone.png')} style={styles.icon} /> Phone</Text>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-          />
-         
-        </View>
-      </View>
+<View style={styles.fieldGroup}>
+  <View style={[styles.labelRow, { flexDirection: 'row', alignItems: 'center' }]}>
+    <Image
+      source={require('../assets/icons/phone.png')}
+      style={[
+        styles.icon,
+        I18nManager.isRTL ? { marginLeft: 6 } : { marginRight: 6 },
+      ]}
+    />
+    <Text
+      style={[
+        styles.label,
+        I18nManager.isRTL && { textAlign: 'right', writingDirection: 'rtl' },
+      ]}
+    >
+      {t('phone')}
+    </Text>
+  </View>
+  <View style={styles.inputWrapper}>
+    <TextInput
+      style={[
+        styles.input,
+        I18nManager.isRTL && { textAlign: 'right', writingDirection: 'rtl' },
+      ]}
+      value={phoneNumber}
+      onChangeText={setPhoneNumber}
+      keyboardType="phone-pad"
+    />
+  </View>
+</View>
 
       <Text style={styles.joinedText}>
-        Joined on: {new Date(createdAt).toLocaleDateString('en-GB')}
+        {t('joinedOn')} {new Date(createdAt).toLocaleDateString('en-GB')}
       </Text>
 
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveText}>Save</Text>
+        <Text style={styles.saveText}>{t('save')}</Text>
         <View style={styles.arrowCircle}>
-          <Image source={require('../assets/icons/next_white.png')} style={styles.arrowIcon} />
+          <Image source={require('../assets/icons/next_white.png')} style={[styles.arrowIcon,  I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]} />
         </View>
       </TouchableOpacity>
+
       <CustomAlert
-      visible={showAlert}
-      message={alertMessage}
-      onClose={() => setShowAlert(false)}
-    />
+        visible={showAlert}
+        message={alertMessage}
+        onClose={() => setShowAlert(false)}
+      />
     </ScrollView>
-    
   );
 }
 
@@ -246,5 +306,11 @@ saveButton: {
   },
   disabledWrapper:{
     backgroundColor: '#f0f0f0'
-  }
+  },
+  labelRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 4,
+  marginHorizontal: 5,
+},
 });

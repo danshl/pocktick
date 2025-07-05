@@ -9,20 +9,30 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import useTranslation from './i18n/useTranslation';
+import { I18nManager } from 'react-native';
+import CustomAlert from './CustomAlert';
 export default function VerifySellerScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [facebookLink, setFacebookLink] = useState('');
   const [idImageUri, setIdImageUri] = useState<string | null>(null);
   const [additionalIdUri, setAdditionalIdUri] = useState<string | null>(null);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [status, setStatus] = useState<'not_submitted' | 'submitted' | 'approved' | 'rejected'>('not_submitted');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+const [alertVisible, setAlertVisible] = useState(false);
+const [alertTitle, setAlertTitle] = useState('');
+const [alertMessage, setAlertMessage] = useState('');
+
+const showAlert = (title: string, message: string) => {
+  setAlertTitle(title);
+  setAlertMessage(message);
+  setAlertVisible(true);
+};
   const pickFile = async (type: 'image' | 'video', setter: (uri: string) => void) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: type === 'image' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
@@ -49,7 +59,7 @@ export default function VerifySellerScreen() {
 
 const handleSubmit = async () => {
   if (!facebookLink || !idImageUri || !additionalIdUri) {
-    Alert.alert('Missing Info', 'Please fill all fields and upload all files.');
+    showAlert(t('missingInfoTitle'), t('missingInfoBody'));
     return;
   }
 
@@ -61,25 +71,27 @@ const handleSubmit = async () => {
     formData.append('idImage', { uri: idImageUri, name: 'id.jpg', type: 'image/jpeg' } as any);
     formData.append('additionalId', { uri: additionalIdUri, name: 'extra.jpg', type: 'image/jpeg' } as any);
 
-    const res = await fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/sellerverification/submit', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+    const res = await fetch(
+      'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/sellerverification/submit',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      }
+    );
 
     if (res.ok) {
-      Alert.alert('Submitted', 'Your verification request was submitted.');
+      showAlert(t('submitted'), t('submittedSuccess'));
       setStatus('submitted');
     } else {
-      Alert.alert('Error', 'Submission failed. Try again.');
+      showAlert(t('error'), t('submissionFailed'));
     }
   } catch (e) {
-    Alert.alert('Error', 'Unexpected error. Try again.');
+    showAlert(t('error'), t('unexpectedError'));
   } finally {
     setIsSubmitting(false);
   }
 };
-
   useEffect(() => {
     fetchStatus();
   }, []);
@@ -89,28 +101,23 @@ const handleSubmit = async () => {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={styles.container}>
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Image source={require('../assets/icons/arrow-left.png')} style={styles.backIcon} />
+        <Image source={require('../assets/icons/arrow-left.png')} style={[styles.backIcon, I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]} />
       </TouchableOpacity>
 
       {status === 'approved' ? (
         <View style={styles.centeredContainer}>
           <Image source={require('../assets/icons/verified.png')} style={styles.verifiedImage} />
           <View style={styles.confirmedBox}>
-            <Text style={styles.confirmedText}>
-              You are verified as a seller.{"\n"}
-              You can now transfer tickets from companies that are not officially supported on the platform.
-            </Text>
+            <Text style={styles.confirmedText}>{t('approvedMessage')}</Text>
           </View>
         </View>
       ) : (
         <>
-          <Text style={styles.title}>Verify Seller</Text>
-          <Text style={styles.description}>
-            To sell tickets for unofficial partners, please submit your Facebook profile, a photo of your ID and an additional ID (e.g., passport or license).
-          </Text>
+          <Text style={styles.title}>{t('verifySellerTitle')}</Text>
+          <Text style={styles.description}>{t('verifySellerDescription')}</Text>
 
           <View style={styles.formSection}>
-            <Text style={[styles.label, disabled && styles.labelDisabled]}>Facebook Profile Link</Text>
+            <Text style={[styles.label, disabled && styles.labelDisabled]}>{t('facebookLabel')}</Text>
             <TextInput
               style={[styles.input, disabled ? styles.inputDisabled : styles.inputEnabled]}
               value={facebookLink}
@@ -120,47 +127,65 @@ const handleSubmit = async () => {
             />
 
             <UploadSection
-              label="Upload ID Image"
+              label={t('uploadIdImage')}
               value={idImageUri}
               onPress={() => pickFile('image', setIdImageUri)}
               disabled={disabled}
             />
 
             <UploadSection
-              label="Upload Additional ID"
+              label={t('uploadAdditionalId')}
               value={additionalIdUri}
               onPress={() => pickFile('image', setAdditionalIdUri)}
               disabled={disabled}
             />
-
-            {/* <UploadSection
-              label="Upload Selfie Video (until 5 sec)"
-              value={videoUri}
-              onPress={() => pickFile('video', setVideoUri)}
-              disabled={disabled}
-            /> */}
           </View>
 
-        <TouchableOpacity
-          style={[styles.submitButton, (disabled || isSubmitting) && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={disabled || isSubmitting}
-        >
-          <Text style={styles.submitText}>
-            {isSubmitting ? 'Submitting…' : 'Submit'}
-          </Text>
-        </TouchableOpacity>
+{status === 'not_submitted' && (
+<TouchableOpacity
+  style={[
+    styles.submitButton,
+    (disabled || isSubmitting) && styles.submitButtonDisabled
+  ]}
+  onPress={handleSubmit}
+  disabled={disabled || isSubmitting}
+>
+  <Text style={styles.submitText}>
+    {isSubmitting ? t('submitting') : t('submit')}
+  </Text>
+
+  <View
+    style={[
+      styles.arrowCircle,
+      I18nManager.isRTL ? { right: 20 } : { left: 20 }, // קצה הכפתור
+    ]}
+  >
+    <Image
+      source={require('../assets/icons/next_white.png')}
+      style={[
+        styles.arrowIconImage,
+        I18nManager.isRTL && { transform: [{ rotate: '180deg' }] },
+      ]}
+    />
+  </View>
+</TouchableOpacity>
+)}
 
           {status === 'submitted' && (
             <View style={styles.pendingBox}>
-              <Text style={styles.pendingText}>
-                Your verification has been submitted and is under review. Please wait for approval.
-              </Text>
+              <Text style={styles.pendingText}>{t('underReviewMessage')}</Text>
             </View>
           )}
         </>
       )}
+      <CustomAlert
+  visible={alertVisible}
+  title={alertTitle}
+  message={alertMessage}
+  onClose={() => setAlertVisible(false)}
+/>
     </ScrollView>
+    
   );
 }
 
@@ -175,7 +200,7 @@ function UploadSection({ label, value, onPress, disabled }: any) {
       >
         {value ? (
           <View style={styles.uploadedRow}>        
-            <Text style={[styles.uploadText, disabled && styles.uploadTextDisabled]}>Uploaded</Text>
+            <Text style={[styles.uploadText, disabled && styles.uploadTextDisabled]}>{label}</Text>
             <Image source={require('../assets/icons/checkmark.png')} style={styles.checkIcon} />
           </View>
         ) : (
@@ -185,7 +210,6 @@ function UploadSection({ label, value, onPress, disabled }: any) {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
@@ -220,23 +244,25 @@ const styles = StyleSheet.create({
   formSection: {
     marginBottom: 20,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
-    color: '#1D2B64',
-    fontFamily: 'Poppins-Regular',
-  },
+label: {
+  fontSize: 14,
+  fontWeight: '600',
+  marginBottom: 6,
+  color: '#1D2B64',
+  fontFamily: 'Poppins-Regular',
+  textAlign: I18nManager.isRTL ? 'left' : 'left',
+},
   labelDisabled: {
     color: '#aaa',
   },
-  input: {
-    height: 50,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-  },
+input: {
+  height: 50,
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  marginBottom: 16,
+  borderWidth: 1,
+  textAlign: I18nManager.isRTL ? 'left' : 'left', // 🧠 יישור תוכן
+},
   inputEnabled: {
     borderColor: '#1D2B64',
     color: '#1D2B64',
@@ -268,24 +294,47 @@ const styles = StyleSheet.create({
   uploadTextDisabled: {
     color: '#aaa',
   },
-  submitButton: {
-    backgroundColor: '#1D2B64',
-    height: 50,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Bold',
-  },
+submitButton: {
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: '#1D2B64',
+  borderRadius: 20,
+  height: 56,
+  paddingVertical: 14,
+  paddingHorizontal: 20,
+  width: 335,
+  alignSelf: 'center',
+  marginTop: 10,
+  position: 'relative', // חשוב בשביל החץ!
+},
+
+submitButtonDisabled: {
+  backgroundColor: '#9fa9c7',
+},
+
+submitText: {
+  color: '#fff',
+  fontSize: 17,
+  fontFamily: 'Poppins-Bold',
+  textAlign: 'center',
+},
+
+arrowCircle: {
+  width: 32,
+  height: 32,
+  borderRadius: 16,
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  alignItems: 'center',
+  justifyContent: 'center',
+  position: 'absolute', // מצמיד לצד
+  top: 12,
+},
+
+arrowIconImage: {
+  width: 16,
+  height: 16,
+},
+ 
   pendingBox: {
     padding: 15,
     borderRadius: 12,
@@ -332,4 +381,17 @@ checkIcon: {
   resizeMode: 'contain',
   tintColor: '#1D2B64',
 },
+submitContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between', // חשוב!
+  width: '100%',
+},
+
+arrowWrapper: {
+  position: 'absolute',
+  right: 20, // או left: 20 אם RTL
+},
+
+ 
 });

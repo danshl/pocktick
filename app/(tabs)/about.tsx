@@ -1,14 +1,26 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  StatusBar,
+  I18nManager,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'react-native';
+import useTranslation from '../i18n/useTranslation';
 
 export default function AboutUsScreen() {
   const router = useRouter();
+  const { t, language } = useTranslation();
+  const isRTL = language === 'he';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
       <View style={styles.headerImageContainer}>
         <Image
           source={require('../../assets/icons/logo_full_blue.png')}
@@ -17,42 +29,33 @@ export default function AboutUsScreen() {
         />
       </View>
 
-      <Text style={styles.sectionTitle}>Your Smart & Secure Ticket Wallet</Text>
-      <Text style={styles.paragraph}>
-        <Text style={styles.bold}>PockTick</Text> is an all-in-one platform for securely storing, managing, and transferring event tickets — whether they were purchased from official ticket companies or private individuals.
-      </Text>
+      <View style={isRTL ? styles.rtlContainer : null}>
+        <Text style={styles.sectionTitle}>{t('aboutTitle')}</Text>
+        <Text style={styles.paragraph}>{t('aboutDesc1')}</Text>
 
-      <Text style={styles.sectionTitle}>Direct from Companies</Text>
-      <Text style={styles.paragraph}>
-        Tickets from companies that work with PockTick are automatically delivered to your app. No more digging through emails or worrying about lost files. Just open the app and you're ready to go.
-      </Text>
+        <Text style={styles.sectionTitle}>{t('aboutTitle2')}</Text>
+        <Text style={styles.paragraph}>{t('aboutDesc2')}</Text>
 
-      <Text style={styles.sectionTitle}>Safe Peer-to-Peer Transfers</Text>
-      <Text style={styles.paragraph}>
-        Received a ticket from a friend or bought one from someone else? We make sure it's secure. Private sellers go through a verification process, and tickets are locked until you choose to open them — ensuring full protection.
-      </Text>
+        <Text style={styles.sectionTitle}>{t('aboutTitle3')}</Text>
+        <Text style={styles.paragraph}>{t('aboutDesc3')}</Text>
 
-      <Text style={styles.sectionTitle}>Verified and Transparent</Text>
-      <Text style={styles.paragraph}>
-        Every transfer is tracked, every QR code is refreshed, and every ticket is checked. From event details to seat types, we make sure what you get is exactly what you expected.
-      </Text>
+        <Text style={styles.sectionTitle}>{t('aboutTitle4')}</Text>
+        <Text style={styles.paragraph}>{t('aboutDesc4')}</Text>
 
-      <Text style={styles.sectionTitle}>One Community, One Account</Text>
-      <Text style={styles.paragraph}>
-        Each user has a single verified account, valid for life. Sellers who violate trust are permanently removed, so you can feel confident buying and selling.
-      </Text>
+        <Text style={styles.sectionTitle}>{t('aboutTitle5')}</Text>
+        <Text style={styles.paragraph}>{t('aboutDesc5')}</Text>
 
-      <View style={styles.contactContainer}>
-        <Text style={styles.questions}>Questions?</Text>
-        <Text style={styles.contact}>
-          Contact us at <Text style={styles.email}>support@pocktick.com</Text>
-        </Text>
+        <View style={styles.contactContainer}>
+          <Text style={styles.questions}>{t('aboutQuestions')}</Text>
+          <Text style={styles.contact}>
+            {t('aboutContact')} <Text style={styles.email}>support@pocktick.com</Text>
+          </Text>
+        </View>
       </View>
 
-      {/* ✅ כפתור */}
       <TouchableOpacity style={styles.ctaButton} onPress={() => router.push('/my-tickets')}>
-        <Text style={styles.ctaText}>My Tickets</Text>
-        <View style={styles.arrowCircle}>
+        <Text style={styles.ctaText}>{t('aboutButton')}</Text>
+        <View style={[styles.arrowCircle,  I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]}>
           <Image source={require('../../assets/icons/next_white.png')} style={styles.arrowIcon} />
         </View>
       </TouchableOpacity>
@@ -61,25 +64,23 @@ export default function AboutUsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#fff',
-    flex: 1,
+  container: { backgroundColor: '#fff', flex: 1 },
+  content: {
+    padding: 24,
+    paddingTop: 40,
+    paddingBottom: 100,
   },
-    content: {
-      padding: 24,
-      paddingTop: 0, // ⬅️ זה מה שמרחיק את התוכן מהחלק העליון
-      paddingBottom: 100,
-    },
-  headerImageContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerImage: {
-    width: 380,
-    height: 130,
-    right: 10,
-    bottom: -30,
-  },
+headerImageContainer: {
+  alignItems: 'center',
+  marginBottom: 10,
+},
+
+headerImage: {
+  width: 380,
+  height: 180,
+  marginBottom: -30, // במקום bottom/right – לא ישפיע על יישור
+  alignSelf: 'center', // מבטיח שהתמונה באמת במרכז
+},
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -87,57 +88,56 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 15,
     fontFamily: 'Poppins-Bold',
+    textAlign: 'left',
   },
   paragraph: {
     fontSize: 15,
     color: '#444',
     lineHeight: 24,
     fontFamily: 'Poppins-Regular',
+    textAlign: 'left',
   },
   bold: {
     fontWeight: 'bold',
     color: '#1D2B64',
   },
   contactContainer: {
-    marginTop: 60,
+    marginTop: 30,
     marginBottom: 20,
-    alignItems: 'center',
   },
-  questions: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1D2B64',
-    marginBottom: 8,
-    fontFamily: 'Poppins-Bold',
-  },
-  contact: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    fontFamily: 'Poppins-Regular',
-  },
+questions: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#1D2B64',
+  marginBottom: 8,
+  fontFamily: 'Poppins-Bold',
+  textAlign: 'center',  
+},
+contact: {
+  fontSize: 14,
+  color: '#666',
+  paddingHorizontal: 20,
+  fontFamily: 'Poppins-Regular',
+  textAlign: 'center', 
+},
   email: {
     color: '#1D2B64',
     fontWeight: '600',
   },
-
-  ctaButton: {
-    flexDirection: 'row',
-    backgroundColor: '#1D2B64',
-    borderRadius: 20,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#1D2B64',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-    marginBottom: 40,
-  },
+ctaButton: {
+  backgroundColor: '#1D2B64',
+  borderRadius: 20,
+  height: 56,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingVertical: 14,
+  paddingHorizontal: 20,
+  width: 280,
+  alignSelf: 'center',
+  marginTop: 10,
+  marginBottom: 40,
+},
   ctaText: {
     color: '#fff',
     fontSize: 17,
@@ -153,5 +153,9 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     tintColor: '#fff',
+  },
+  rtlContainer: {
+    direction: 'rtl',
+    alignSelf: 'stretch',
   },
 });

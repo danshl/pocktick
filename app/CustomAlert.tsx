@@ -6,6 +6,7 @@ type Props = {
   message: string;
   onClose: () => void;
   title?: string; // ← אופציונלי
+  onConfirm? : () => void;
 };
 
 export default function CustomAlert({ visible, message, onClose, title }: Props) {

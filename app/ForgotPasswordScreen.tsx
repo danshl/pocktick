@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { requestPasswordReset } from './api/auth';
 import CustomAlert from './CustomAlert';
+import useTranslation from './i18n/useTranslation';
+import { I18nManager } from 'react-native';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -19,6 +20,7 @@ export default function ForgotPasswordScreen() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleForgotPassword = async () => {
     if (!email) return;
@@ -30,14 +32,16 @@ export default function ForgotPasswordScreen() {
       const result = await requestPasswordReset(email);
 
       if (result.success) {
-        setAlertMessage('A reset code has been sent to your email.');
+        setAlertMessage(t('resetCodeSent'));
         setAlertVisible(true);
         router.push({ pathname: '/VerifyCodeScreen', params: { email } });
-      } else {
-        setErrorMessage(result.message || 'Something went wrong.');
-      }
+      } if (result.message?.toLowerCase().includes('user not found')) {
+  setErrorMessage(t('userNotFound'));
+} else {
+  setErrorMessage(result.message || t('somethingWentWrong'));
+}
     } catch (error) {
-      setErrorMessage('Something went wrong. Please try again later.');
+      setErrorMessage(t('somethingWentWrongTryLater'));
     } finally {
       setLoading(false);
     }
@@ -45,28 +49,33 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Image source={require('../assets/icons/arrow-left.png')} style={styles.backIcon} />
+      <TouchableOpacity onPress={() => router.replace('/login')} style={styles.backButton}>
+        <Image
+          source={require('../assets/icons/arrow-left.png')}
+          style={[
+            styles.backIcon,
+            I18nManager.isRTL && { transform: [{ rotate: '180deg' }] },
+          ]}
+        />
       </TouchableOpacity>
 
-      <Text style={styles.title}>Forgot password</Text>
-      <Text style={styles.subtitle}>
-        Please enter your email to reset your password
-      </Text>
+      <Text style={styles.title}>{t('forgotPassword')}</Text>
+      <Text style={styles.subtitle}>{t('enterEmailToReset')}</Text>
 
       <View style={styles.labelContainer}>
         <Image source={require('../assets/icons/mail.png')} style={styles.labelIcon} />
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t('email')}</Text>
       </View>
 
       <TextInput
         style={styles.input}
-        placeholder="Enter your email"
+        placeholder={t('emailPlaceholder')}
         placeholderTextColor="#999"
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
+        textAlign={I18nManager.isRTL ? 'right' : 'left'}
       />
 
       <TouchableOpacity
@@ -75,14 +84,21 @@ export default function ForgotPasswordScreen() {
         disabled={!email || loading}
       >
         <Text style={styles.resetButtonText}>
-          {loading ? 'Sending...' : 'Reset password'}
+          {loading ? t('sending') : t('resetPassword')}
         </Text>
         <View style={styles.arrowCircle}>
-          <Image source={require('../assets/icons/next_white.png')} style={styles.arrowIcon} />
+          <Image
+            source={require('../assets/icons/next_white.png')}
+            style={[
+              styles.arrowIcon,
+              I18nManager.isRTL && { transform: [{ rotate: '180deg' }] },
+            ]}
+          />
         </View>
       </TouchableOpacity>
 
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
       <CustomAlert
         visible={alertVisible}
         message={alertMessage}
@@ -96,11 +112,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 80,
     backgroundColor: '#fff',
   },
   backButton: {
-    marginBottom: 30,
+    marginBottom: 20,
   },
   backIcon: {
     width: 22,
@@ -115,13 +131,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     textAlign: 'center',
     marginBottom: 6,
+    marginTop: 50,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#1D2B64',
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
     marginBottom: 28,
+    fontWeight: 'bold',
   },
   labelContainer: {
     flexDirection: 'row',
@@ -129,13 +147,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   labelIcon: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     marginRight: 8,
+    marginTop:-2,
     tintColor: '#1D2B64',
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#1D2B64',
     fontFamily: 'Poppins-Regular',

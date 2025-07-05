@@ -7,29 +7,29 @@ import * as Updates from 'expo-updates';
 export default function AuthCheck() {
   const router = useRouter();
 
-  useEffect(() => {
-    const initialize = async () => {
-      const rtlDisabled = await AsyncStorage.getItem('rtlDisabled');
+useEffect(() => {
+  const initialize = async () => {
+    const language = await AsyncStorage.getItem('language'); // 'he' or 'en'
+    const isHebrew = language === 'he';
 
-      if (I18nManager.isRTL && rtlDisabled !== 'true') {
-        I18nManager.allowRTL(false);
-        I18nManager.forceRTL(false);
-        await AsyncStorage.setItem('rtlDisabled', 'true');
-        await Updates.reloadAsync();
-        return;
-      }
+    if (I18nManager.isRTL !== isHebrew) {
+      I18nManager.allowRTL(isHebrew);
+      I18nManager.forceRTL(isHebrew);
+      await Updates.reloadAsync();
+      return;
+    }
 
-      const token = await AsyncStorage.getItem('token');
-      console.log("✅ Token:", token);
-      if (token) {
-        router.replace('/(tabs)/my-tickets');
-      } else {
-        router.replace('/initial-loader');
-      }
-    };
+    const token = await AsyncStorage.getItem('token');
+    console.log("✅ Token:", token);
+    if (token) {
+      router.replace('/(tabs)/my-tickets');
+    } else {
+      router.replace('/initial-loader');
+    }
+  };
 
-    initialize();
-  }, []);
+  initialize();
+}, []);
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

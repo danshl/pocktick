@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,11 @@ import { login } from './api/auth';
 import { registerUser } from './api/auth';
 import useAppleLogin from './AppleSignIn';
 import { handleToken } from './tokenUtils';
+import * as Updates from 'expo-updates';
+import { I18nManager } from 'react-native';
+import useTranslation from './i18n/useTranslation';
+import CustomAlert from './CustomAlert';
+
 
 const TitleBar2 = () => (
   <View style={styles.titleBar} />
@@ -30,22 +35,30 @@ type Group33624Props = {
   onTabChange: (tab: 'login' | 'signup') => void;
 };
 
-const Group33624: React.FC<Group33624Props> = ({ selectedTab, onTabChange }) => (
-  <View style={styles.tabGroup33624}>
-    <TouchableOpacity
-      style={[styles.tabButton, selectedTab === 'login' && styles.activeTab]}
-      onPress={() => onTabChange('login')}
-    >
-      <Text style={[styles.tabText, selectedTab === 'login' && styles.activeTabText]}>Log In</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={[styles.tabButton, selectedTab === 'signup' && styles.activeTab]}
-      onPress={() => onTabChange('signup')}
-    >
-      <Text style={[styles.tabText, selectedTab === 'signup' && styles.activeTabText]}>Sign Up</Text>
-    </TouchableOpacity>
-  </View>
-);
+const Group33624: React.FC<Group33624Props> = ({ selectedTab, onTabChange }) => {
+  const { t } = useTranslation();
+
+  return (
+    <View style={styles.tabGroup33624}>
+      <TouchableOpacity
+        style={[styles.tabButton, selectedTab === 'login' && styles.activeTab]}
+        onPress={() => onTabChange('login')}
+      >
+        <Text style={[styles.tabText, selectedTab === 'login' && styles.activeTabText]}>
+          {t('login')}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.tabButton, selectedTab === 'signup' && styles.activeTab]}
+        onPress={() => onTabChange('signup')}
+      >
+        <Text style={[styles.tabText, selectedTab === 'signup' && styles.activeTabText]}>
+          {t('signup')}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 type InputFieldProps = {
   label: string;
@@ -126,7 +139,7 @@ type Frame33377Props = {
   error: boolean;
   setError: (val: boolean) => void;
 };
-
+ 
 const Frame33377: React.FC<Frame33377Props> = ({
   selectedTab,
   setSelectedTab,
@@ -154,126 +167,145 @@ const Frame33377: React.FC<Frame33377Props> = ({
   setShowSignupConfirmPassword,
   error,
   setError,
-}) => (
-  <View style={styles.frameContent}>
-    <Group33624 selectedTab={selectedTab} onTabChange={setSelectedTab} />
+}) => {
+  const { t } = useTranslation();
 
-    {selectedTab === 'login' ? (
-      <>
-        <InputField
-          label=" Email"
-          placeholder="Enter your email"
-          icon={require('../assets/icons/Message.png')}
-          value={email}
-          onChangeText={setEmail}
-        />
-        <InputField
-          label=" Password"
-          placeholder="Enter your password"
-          secure={!showLoginPassword}
-          icon={require('../assets/icons/lock.png')}
-          value={password}
-          onChangeText={setPassword}
-          showPassword={showLoginPassword}
-          onTogglePassword={() => setShowLoginPassword(!showLoginPassword)}
-        />
+  return (
+    <View style={styles.frameContent}>
+      <Group33624 selectedTab={selectedTab} onTabChange={setSelectedTab} />
 
-        <View style={styles.forgotAndErrorRow}>
-          <TouchableOpacity onPress={() => router.push('/ForgotPasswordScreen')}>
-            <AppText style={styles.forgotLink}>Forgot Password?</AppText>
-          </TouchableOpacity>
-          {error && <Text style={styles.errorText}>Invalid email or password</Text>}
-        </View>
+      {selectedTab === 'login' ? (
+        <>
+          <InputField
+            label={t('email')}
+            placeholder={t('emailPlaceholder')}
+            icon={require('../assets/icons/Message.png')}
+            value={email}
+            onChangeText={setEmail}
+          />
+          <InputField
+            label={t('password')}
+            placeholder={t('passwordPlaceholder')}
+            secure={!showLoginPassword}
+            icon={require('../assets/icons/lock.png')}
+            value={password}
+            onChangeText={setPassword}
+            showPassword={showLoginPassword}
+            onTogglePassword={() => setShowLoginPassword(!showLoginPassword)}
+          />
 
-        <TouchableOpacity
-          style={[styles.continueButton, isLoading && { opacity: 0.6 }]}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
+          <View style={styles.forgotAndErrorRow}>
+            <TouchableOpacity onPress={() => router.push('/ForgotPasswordScreen')}>
+              <AppText style={styles.forgotLink}>{t('forgotPassword')}</AppText>
+            </TouchableOpacity>
+            {error && <Text style={styles.errorText}>{t('invalidCredentials')}</Text>}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.continueButton, isLoading && { opacity: 0.6 }]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
           <AppText style={styles.continueText}>
-            {isLoading ? 'Authenticating...' : 'Continue'}
+            {isLoading ? t('authenticating') : t('continue')}
           </AppText>
-          <View style={styles.arrowCircle}>
-            <Image
-              source={require('../assets/icons/next_white.png')}
-              style={styles.arrowIcon}
-            />
-          </View>
-        </TouchableOpacity>
-
-        <AppText style={styles.orText}>OR</AppText>
-        {Platform.OS === 'ios' && (
-          <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
-            <Image source={require('../assets/icons/apple.png')} style={styles.socialIcon} />
-            <AppText style={styles.socialText}>Login with Apple</AppText>
+        <View style={styles.arrowCircle}>
+          <Image
+            source={require('../assets/icons/next_white.png')}
+            style={[
+              styles.arrowIcon,
+              I18nManager.isRTL && { transform: [{ rotate: '180deg' }] },
+            ]}
+          />
+        </View>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity style={styles.socialButton} onPress={signIn}>
-          <Image source={require('../assets/icons/google.png')} style={styles.socialIcon} />
-          <AppText style={styles.socialText}>Login with Google</AppText>
-        </TouchableOpacity>
-<AppText style={styles.bottomText}>
-  Don’t have an account?{' '}
-  <Text style={styles.link} onPress={() => setSelectedTab('signup')}>Sign up</Text>
-</AppText>
-      </>
-    ) : (
-      <>
-        <AppText style={styles.createAccountTitle}>Create an account</AppText>
-        <InputField
-          label=" Full Name"
-          placeholder="Enter your full name"
-          icon={require('../assets/icons/user.png')}
-          value={fullName}
-          onChangeText={setFullName}
-        />
-        <InputField
-          label=" Phone Number"
-          placeholder="Enter your phone number"
-          icon={require('../assets/icons/phone.png')}
-          value={phoneNumber}
-          onChangeText={setPhoneNumber}
-        />
-        <InputField
-          label=" Email"
-          placeholder="Enter your email"
-          icon={require('../assets/icons/Message.png')}
-          value={email}
-          onChangeText={setEmail}
-        />
-        <InputField
-          label=" Password"
-          placeholder="Enter your password"
-          secure={true}
-          icon={require('../assets/icons/lock.png')}
-          value={password}
-          onChangeText={setPassword}
-        />
-        <InputField
-          label=" Confirm Password"
-          placeholder="Confirm your password"
-          secure={true}
-          icon={require('../assets/icons/lock.png')}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
-        <TouchableOpacity style={styles.continueButton} onPress={handleSignup}>
-          <AppText style={styles.continueText}>Sign Up</AppText>
-          <View style={styles.arrowCircle}>
-            <Image
-              source={require('../assets/icons/next_white.png')}
-              style={styles.arrowIcon}
-            />
-          </View>
-        </TouchableOpacity>
-<AppText style={styles.bottomText}>
-  Already have an account?{' '}
-  <Text style={styles.link} onPress={() => setSelectedTab('login')}>Log In</Text>
-</AppText>
-      </>
-    )}
+
+          <AppText style={styles.orText}>{t('or')}</AppText>
+          {Platform.OS === 'ios' && (
+            <TouchableOpacity style={styles.socialButton} onPress={signInWithApple}>
+              <Image source={require('../assets/icons/apple.png')} style={styles.socialIcon} />
+              <AppText style={styles.socialText}>{t('appleLogin')}</AppText>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.socialButton} onPress={signIn}>
+            <Image source={require('../assets/icons/google.png')} style={styles.socialIcon} />
+            <AppText style={styles.socialText}>{t('googleLogin')}</AppText>
+          </TouchableOpacity>
+
+          <AppText style={styles.bottomText}>
+            {t('noAccount')}{' '}
+            <Text style={styles.link} onPress={() => setSelectedTab('signup')}>{t('toSignup')}</Text>
+          </AppText>
+        </>
+      ) : (
+        <>
+          <AppText style={styles.createAccountTitle}>{t('createAccount')}</AppText>
+          <InputField
+            label= {t('fullName')}
+            placeholder={t('namePlaceholder')}
+            icon={require('../assets/icons/user.png')}
+            value={fullName}
+            onChangeText={setFullName}
+          />
+          <InputField
+            label= {t('phoneNumber')}
+            placeholder={t('phonePlaceholder')}
+            icon={require('../assets/icons/phone.png')}
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+          />
+          <InputField
+            label={t('email')}
+            placeholder={t('emailPlaceholder')}
+            icon={require('../assets/icons/Message.png')}
+            value={email}
+            onChangeText={setEmail}
+          />
+          <InputField
+            label={t('password')}
+            placeholder= {t('passwordPlaceholder')}
+            secure={true}
+            icon={require('../assets/icons/lock.png')}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <InputField
+            label= {t('confirmPassword')}
+            placeholder= {t('confirmforgotPassword')}
+            secure={true}
+            icon={require('../assets/icons/lock.png')}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
+<TouchableOpacity
+  style={[styles.continueButton, isLoading && { opacity: 0.6 }]}
+  onPress={handleSignup}
+  disabled={isLoading}
+>
+  <AppText style={styles.continueText}>
+    {isLoading ? t('signingUp') : t('signup')}
+  </AppText>
+  <View style={styles.arrowCircle}>
+    <Image
+      source={require('../assets/icons/next_white.png')}
+      style={[
+        styles.arrowIcon,
+        I18nManager.isRTL && { transform: [{ rotate: '180deg' }] },
+      ]}
+    />
   </View>
-);
+</TouchableOpacity>
+          <AppText style={styles.bottomText}>
+            {t('yesAccount')}{' '}
+            <Text style={styles.link} onPress={() => setSelectedTab('login')}>{t('toLogin')}</Text>
+          </AppText>
+        </>
+      )}
+    </View>
+  );
+};
+
+
 
 export default function LoginScreen() {
   const [selectedTab, setSelectedTab] = useState<'login' | 'signup'>('login');
@@ -287,10 +319,39 @@ export default function LoginScreen() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
-
+  const [language, setLanguage] = useState<'he' | 'en'>('en');
   const router = useRouter();
   const { signIn } = useGoogleLogin();
   const { signInWithApple } = useAppleLogin();
+  const { t } = useTranslation();
+  const [alertVisible, setAlertVisible] = useState(false);
+const [alertMessage, setAlertMessage] = useState('');
+const [alertTitle, setAlertTitle] = useState('');
+
+useEffect(() => {
+  const loadLanguage = async () => {
+    const savedLang = await AsyncStorage.getItem('language');
+    if (savedLang === 'he' || savedLang === 'en') {
+      setLanguage(savedLang);
+    }
+  };
+  loadLanguage();
+}, []);
+
+
+const changeLanguage = async (lang: 'he' | 'en') => {
+  setLanguage(lang);
+  await AsyncStorage.setItem('language', lang);
+  await AsyncStorage.removeItem('authToken');
+  await AsyncStorage.removeItem('userEmail');
+
+  const isRTL = lang === 'he';
+  if (I18nManager.isRTL !== isRTL) {
+    I18nManager.allowRTL(isRTL);
+    I18nManager.forceRTL(isRTL);
+    await Updates.reloadAsync(); // נדרש כדי שהכיוון יתעדכן
+  }
+};
 
 const handleLogin = async () => {
   try {
@@ -299,7 +360,7 @@ const handleLogin = async () => {
 
     const result = await login(email, password);
     const token = result.token;
-
+    console.log(token);
     // שמירה מקומית של הטוקן והאימייל
     handleToken(result.token,result.email);
 
@@ -322,39 +383,51 @@ const handleLogin = async () => {
       router.replace('/accept-terms');
     }
   } catch (error: any) {
-    if (error.status === 401 && error.message?.includes('verify your email')) {
-      Alert.alert('Email Not Verified', 'Please verify your email to continue.', [
-        { text: 'OK', onPress: () => router.push({ pathname: '/VerifyEmailScreen', params: { email } }) },
-      ]);
-    } else if (error.status === 400 && error.message?.toLowerCase().includes('too many')) {
-      Alert.alert('Too Many Attempts', 'Please try again in 15 minutes.');
-    } else {
-      console.error('Login error:', error);
-      setError(true);
-    }
-  } finally {
+  if (error.status === 401 && error.message?.includes('verify your email')) {
+    setAlertTitle(t('emailNotVerifiedTitle'));
+    setAlertMessage(t('emailNotVerifiedMessage'));
+    setAlertVisible(true);
+  } else if (error.status === 400 && error.message?.toLowerCase().includes('too many')) {
+    setAlertTitle(t('tooManyAttemptsTitle'));
+    setAlertMessage(t('tooManyAttemptsMessage'));
+    setAlertVisible(true);
+  } else {
+    //console.error('Login error:', error);
+    setError(true);
+  }
+}finally {
     setIsLoading(false);
   }
 };
 
-  const handleSignup = async () => {
-    if (!email || !password || !confirmPassword || !fullName) {
-      Alert.alert('Missing Fields', 'Please fill in all required fields');
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert('Password Mismatch', "Passwords don't match");
-      return;
-    }
+const handleSignup = async () => {
+if (!email || !password || !confirmPassword || !fullName) {
+  setAlertTitle(t('missingFieldsTitle') || 'Missing Fields');
+  setAlertMessage(t('missingFieldsMessage') || 'Please fill in all required fields');
+  setAlertVisible(true);
+  return;
+}
+if (password !== confirmPassword) {
+  setAlertTitle(t('passwordMismatchTitle') || 'Password Mismatch');
+  setAlertMessage(t('passwordMismatchMessage') || "Passwords don't match");
+  setAlertVisible(true);
+  return;
+}
 
-    try {
-      await registerUser({ email, fullName, password, phoneNumber });
-      router.push({ pathname: "/VerifyEmailScreen", params: { email } });
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      Alert.alert('Registration Failed', error.message || 'Something went wrong.');
-    }
-  };
+  try {
+    setIsLoading(true);  
+
+    await registerUser({ email, fullName, password, phoneNumber });
+    router.push({ pathname: "/VerifyEmailScreen", params: { email } });
+  } catch (error: any) {
+    //console.error('Signup error:', error);
+setAlertTitle(t('accountExists') || 'Registration Failed');
+setAlertMessage(t('emailNotVerifiedAfterSignup') || 'Something went wrong.');
+setAlertVisible(true);
+  } finally {
+    setIsLoading(false);  
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -392,9 +465,38 @@ const handleLogin = async () => {
           error={error}
           setError={setError}
         />
+        <View style={{ marginTop: 30, alignItems: 'center' }}>
+  <Text style={{ fontFamily: 'Poppins-Regular', color: '#1D2B64', marginBottom: 6 }}>
+    Language:
+  </Text>
+  <View style={{ flexDirection: 'row', gap: 16 }}>
+    <TouchableOpacity onPress={() => changeLanguage('en')}>
+      <Text style={{ color: language === 'en' ? '#3366FF' : '#1D2B64', fontWeight: 'bold' }}>
+        English
+      </Text>
+    </TouchableOpacity>
+    <TouchableOpacity onPress={() => changeLanguage('he')}>
+      <Text style={{ color: language === 'he' ? '#3366FF' : '#1D2B64', fontWeight: 'bold' }}>
+        עברית
+      </Text>
+    </TouchableOpacity>
+  </View>
+</View>
       </ScrollView>
+<CustomAlert
+  visible={alertVisible}
+  title={alertTitle}
+  message={alertMessage}
+  onClose={() => {
+    setAlertVisible(false);
+    if (alertTitle === t('emailNotVerifiedTitle')) {
+      router.push({ pathname: '/VerifyEmailScreen', params: { email } });
+    }
+  }}
+/>
     </View>
   );
+  
 }
 
 const styles = StyleSheet.create({
@@ -472,12 +574,13 @@ const styles = StyleSheet.create({
     color: '#1D2B64',
     fontFamily: 'Poppins-Regular',
   },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    fontFamily: 'Poppins-Regular',
-  },
+input: {
+  flex: 1,
+  fontSize: 16,
+  color: '#333',
+  fontFamily: 'Poppins-Regular',
+  textAlign: I18nManager.isRTL ? 'right' : 'left', // 👈 זה הפתרון
+},
   inputIcon: {
     width: 20,
     height: 20,
@@ -536,7 +639,7 @@ arrowIcon: {
   },
   orText: {
     marginVertical: 10,
-    fontSize: 14,
+    fontSize: 18,
     color: '#1D2B64',
   },
   socialButton: {

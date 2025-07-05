@@ -6,15 +6,17 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
+  I18nManager,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomAlert from './CustomAlert';
+import useTranslation from './i18n/useTranslation';
 
 export default function SetNewPasswordScreen() {
   const router = useRouter();
   const { email, resetToken } = useLocalSearchParams();
+  const { t } = useTranslation();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,72 +30,68 @@ export default function SetNewPasswordScreen() {
     setAlertVisible(true);
   };
 
-const handleUpdatePassword = async () => {
-  if (password !== confirmPassword) {
-    showCustomAlert('Passwords do not match!');
-    return;
-  }
-
-  if (password.length < 6) {
-    showCustomAlert('Password must be at least 6 characters.');
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/reset-password',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resetToken: resetToken, newPassword: password }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-      showCustomAlert('Your password has been updated successfully.');
-      setTimeout(() => {
-        setAlertVisible(false);
-        router.replace('/login');
-      }, 1500);
-    } else {
-      showCustomAlert(data.message || 'Failed to update password.');
+  const handleUpdatePassword = async () => {
+    if (password !== confirmPassword) {
+      showCustomAlert(t('passwordsDontMatch'));
+      return;
     }
-  } catch (error) {
-    console.error('Error:', error);
-    showCustomAlert('Something went wrong. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+
+    if (password.length < 6) {
+      showCustomAlert(t('passwordTooShort'));
+      return;
+    }
+
+    try {
+      console.log("00",resetToken);
+      const response = await fetch(
+        'https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/auth/reset-password',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resetToken, newPassword: password }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showCustomAlert(t('passwordUpdated'));
+        setTimeout(() => {
+          setAlertVisible(false);
+          router.replace('/login');
+        }, 1500);
+      } else {
+        showCustomAlert(data.message || t('updateFailed'));
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showCustomAlert(t('genericError'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <View>
-          <Image source={require('../assets/icons/arrow-left.png')} style={styles.backIcon} />
-        </View>
+        <Image source={require('../assets/icons/arrow-left.png')} style={[styles.backIcon, I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]} />
       </TouchableOpacity>
 
-      <Text style={styles.title}>Set a new password</Text>
-
-      <Text style={styles.subtitle}>
-        Create a new password. Ensure it differs from previous ones for security.
-      </Text>
+      <Text style={styles.title}>{t('setNewPasswordTitle')}</Text>
+      <Text style={styles.subtitle}>{t('setNewPasswordSubtitle')}</Text>
 
       <View style={styles.labelRow}>
         <Image source={require('../assets/icons/lock.png')} style={styles.labelIcon} />
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.label}>{t('password')}</Text>
       </View>
       <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your new password"
-          secureTextEntry={!showPasswords}
-          value={password}
-          onChangeText={setPassword}
-        />
+      <TextInput
+        style={[styles.input, I18nManager.isRTL && { textAlign: 'right' }]}
+        placeholder={t('enterNewPassword')}
+        secureTextEntry={!showPasswords}
+        value={password}
+        onChangeText={setPassword}
+      />
         <TouchableOpacity onPress={() => setShowPasswords(!showPasswords)}>
           <Image
             source={
@@ -108,12 +106,12 @@ const handleUpdatePassword = async () => {
 
       <View style={styles.labelRow}>
         <Image source={require('../assets/icons/lock.png')} style={styles.labelIcon} />
-        <Text style={styles.label}>Confirm Password</Text>
+        <Text style={styles.label}>{t('confirmPassword')}</Text>
       </View>
       <View style={styles.inputContainer}>
         <TextInput
-          style={styles.input}
-          placeholder="Re-enter password"
+          style={[styles.input, I18nManager.isRTL && { textAlign: 'right' }]}
+          placeholder={t('reenterPassword')}
           secureTextEntry={!showPasswords}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -139,17 +137,18 @@ const handleUpdatePassword = async () => {
         disabled={!password || !confirmPassword || loading}
       >
         <Text style={styles.updateButtonText}>
-          {loading ? 'Updating...' : 'Update Password'}
+          {loading ? t('updating') : t('updatePassword')}
         </Text>
         {!loading && (
           <View style={styles.arrowCircle}>
             <Image
               source={require('../assets/icons/next_white.png')}
-              style={styles.arrowIcon}
+              style={[styles.arrowIcon, I18nManager.isRTL && { transform: [{ rotate: '180deg' }] }]}
             />
           </View>
         )}
       </TouchableOpacity>
+
       <CustomAlert
         visible={alertVisible}
         message={alertMessage}
@@ -163,14 +162,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 110,
     backgroundColor: '#fff',
     alignItems: 'center',
   },
   backButton: {
     position: 'absolute',
-    top: 60,
-    left: 20,
+    top: 80,
+    left: 34,
   },
   backIcon: {
     width: 25,
@@ -181,21 +180,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: 'Poppins-Bold',
     color: '#000',
-    marginBottom: 5,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#1D2B64',
     textAlign: 'center',
     marginBottom: 24,
     fontFamily: 'Poppins-Regular',
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Poppins-Regular',
     alignSelf: 'flex-start',
     color: '#1D2B64',
-    marginBottom: 5,
+    marginBottom: 0,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -248,15 +247,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#8085A3',
   },
   labelRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  alignSelf: 'flex-start',
-  marginBottom: 5,
-  gap: 6, // רווח בין האייקון לטקסט
-},
-labelIcon: {
-  width: 16,
-  height: 16,
-  tintColor: '#1D2B64',
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: 5,
+    gap: 6,
+  },
+  labelIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#1D2B64',
+  },
 });

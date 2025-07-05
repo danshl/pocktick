@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, I18nManager } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +14,7 @@ export default function PaymentScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.push('/my-tickets')} style={styles.backButton}>
+      <TouchableOpacity onPress={() => router.push('/my-tickets')} style={[styles.backButton,I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]}>
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
 

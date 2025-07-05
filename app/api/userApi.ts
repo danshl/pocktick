@@ -16,7 +16,7 @@ export const requestAccountDeletion = async (token: string) => {
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to request deletion');
-  console.log(data);
+  //console.log(data);
   return data;
 };
 
@@ -29,7 +29,7 @@ export const confirmAccountDeletion = async (token: string, code: string) => {
     },
     body: JSON.stringify({ code }),
   });
-
+  
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.message || 'Failed to confirm deletion');

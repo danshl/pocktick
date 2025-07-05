@@ -1,16 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Image,
-  Switch,
-  Alert,
-  TextInput,
-  ScrollView,
-  Modal,
+  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
+  Image, Switch, Alert, TextInput, ScrollView, Modal,
+  I18nManager,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -22,6 +14,7 @@ import {
   confirmAccountDeletion,
 } from '../api/userApi';
 import CustomConfirmModal from '../CustomConfirmModal';
+import useTranslation from '../i18n/useTranslation';
 
 type UserProfile = {
   fullName: string;
@@ -33,14 +26,20 @@ type UserProfile = {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCode, setDeleteCode] = useState('');
   const [deleting, setDeleting] = useState(false);
-const [showConfirmModal, setShowConfirmModal] = useState(false);
- 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+const [alertVisible, setAlertVisible] = useState(false);
+const [alertTitle, setAlertTitle] = useState('');
+const [alertMessage, setAlertMessage] = useState('');
+
+
   const fetchUser = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
@@ -53,32 +52,35 @@ const [showConfirmModal, setShowConfirmModal] = useState(false);
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchUser();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => {
+    fetchUser();
+  }, []));
 
-const handleDeletePress = () => {
-  setShowConfirmModal(true);
-};
+  const handleDeletePress = () => setShowConfirmModal(true);
 
-const handleConfirmDeleteRequest = async () => {
-  try {
-    const token = await AsyncStorage.getItem('authToken');
-    await requestAccountDeletion(token || '');
-    setShowConfirmModal(false);
-    setShowDeleteModal(true); // זה מה שפותח את חלון הקוד
-  } catch (err: any) {
-    Alert.alert('Error', err.message);
-  }
-};
-
-  const handleLogout = async () => {
-    await AsyncStorage.clear();
-    router.replace('/login');
+  const handleConfirmDeleteRequest = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      await requestAccountDeletion(token || '');
+      setShowConfirmModal(false);
+      setShowDeleteModal(true);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    }
   };
 
+const handleLogout = async () => {
+  try {
+    const language = await AsyncStorage.getItem('language'); // שומר את השפה
+    await AsyncStorage.clear(); // מוחק את הכול
+    if (language) {
+      await AsyncStorage.setItem('language', language); // משחזר את השפה
+    }
+    router.replace('/login');
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+};
   const handleConfirmDelete = async () => {
     setDeleting(true);
     try {
@@ -96,65 +98,71 @@ const handleConfirmDeleteRequest = async () => {
   if (loading) return <ActivityIndicator size="large" style={{ marginTop: 60 }} />;
 
   return (
-    <ScrollView
-  style={styles.container}
-  contentContainerStyle={{ paddingBottom: 40, paddingTop: 75, flexGrow: 1 }}
->
-      <Text style={styles.title}>Profile</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40, paddingTop: 75, flexGrow: 1 }}>
+    <View style={{ paddingHorizontal: 18 }}>
+      <Text style={[styles.title, I18nManager.isRTL && { textAlign: 'left' }]}>
+        {t('profileTitle')}
+      </Text>
+    </View>
 
       <View style={styles.profileCard}>
         <Image source={require('../../assets/icons/account.png')} style={styles.avatar} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.welcomeText}>Welcome</Text>
-          <Text style={styles.profileName}>{profile?.fullName || 'User'}</Text>
+        <Text style={[styles.welcomeText, I18nManager.isRTL && { textAlign: 'left' }]}>{t('welcome')}</Text>
+        <Text style={[styles.profileName, I18nManager.isRTL && { textAlign: 'left' }]}>
+          {profile?.fullName || 'User'}
+        </Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Image source={require('../../assets/icons/logout.png')} style={styles.logoutIcon} />
         </TouchableOpacity>
       </View>
 
-      <SettingRow icon="person-outline" text="User Profile" onPress={() => router.push('/user-profile')} />
-      <SettingRow icon="lock-closed-outline" text="Change Password" onPress={() => router.push('/change-password')} />
-      <SettingRow icon="help-circle-outline" text="FAQs" onPress={() => router.push('/faqs')} />
-      <SettingRow icon="checkmark-done-circle-outline" text="Seller Verification" onPress={() => router.push('/verify-seller')} />
-      <SettingRow icon="alert-circle-outline" text="Appeal a Ticket" onPress={() => router.push('/appeal-screen')}/>
-        
+      <SettingRow icon="person-outline" text={t('userProfile')} onPress={() => router.push('/user-profile')} />
+      <SettingRow icon="lock-closed-outline" text={t('changePassword')} onPress={() => router.push('/change-password')} />
+      <SettingRow icon="help-circle-outline" text={t('faqs')} onPress={() => router.push('/faqs')} />
+      <SettingRow icon="checkmark-done-circle-outline" text={t('sellerVerification')} onPress={() => router.push('/verify-seller')} />
+      <SettingRow icon="alert-circle-outline" text={t('appealTicket')} onPress={() => router.push('/appeal-screen')} />
+
       <View style={styles.settingRowContainer}>
         <View style={styles.rowLeft}>
           <Image source={require('../../assets/icons/notification.png')} style={styles.iconImage} />
-          <Text style={styles.rowText}>Push Notification</Text>
+          <Text style={styles.rowText}>{t('pushNotification')}</Text>
         </View>
         <Switch value={notifications} onValueChange={setNotifications} trackColor={{ false: '#ccc', true: '#1D2B64' }} thumbColor="#fff" />
       </View>
 
-      <TouchableOpacity onPress={handleDeletePress}>
-        <Text style={styles.deleteText}>Delete My Account</Text>
-      </TouchableOpacity>
+      <View style={{ paddingHorizontal: 12 }}>
+        <TouchableOpacity onPress={handleDeletePress}>
+          <Text style={styles.deleteText}>{t('deleteAccount')}</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal transparent animationType="fade" visible={showDeleteModal} onRequestClose={() => setShowDeleteModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Confirm Deletion</Text>
-            <Text style={styles.infoText}>
-              A verification code has been sent to your email. Please enter it below to confirm account deletion.
-            </Text>
-            <TextInput placeholder="Enter code" style={styles.input} value={deleteCode} onChangeText={setDeleteCode} />
+            <Text style={styles.modalTitle}>{t('confirmDeletion')}</Text>
+            <Text style={styles.infoText}>{t('deletionInfo')}</Text>
+            <TextInput placeholder={t('enterCode')} style={styles.input} value={deleteCode} onChangeText={setDeleteCode} />
             <TouchableOpacity onPress={handleConfirmDelete} style={styles.confirmDeleteBtn}>
-              <Text style={styles.confirmDeleteText}>{deleting ? 'Deleting...' : 'Confirm Deletion'}</Text>
+              <Text style={styles.confirmDeleteText}>
+                {deleting ? `${t('confirmBtn')}...` : t('confirmBtn')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
-              <Text style={styles.cancelModalText}>Cancel</Text>
+              <Text style={styles.cancelModalText}>{t('cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
       <CustomConfirmModal
-  visible={showConfirmModal}
-  title="Delete Account"
-  message="Are you sure you want to delete your account? This action is irreversible."
-  onCancel={() => setShowConfirmModal(false)}
-  onConfirm={handleConfirmDeleteRequest}
-/>
+        visible={showConfirmModal}
+        title={t('modalDeleteTitle')}
+        message={t('modalDeleteMessage')}
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmDeleteRequest}
+      />
     </ScrollView>
   );
 }
@@ -166,10 +174,16 @@ function SettingRow({ icon, text, onPress }: { icon: any; text: string; onPress:
         <Ionicons name={icon} size={22} color="#1D2B64" />
         <Text style={styles.rowText}>{text}</Text>
       </View>
-      <Feather name="chevron-right" size={20} color="#1D2B64" />
+      <Feather
+        name="chevron-right"
+        size={20}
+        color="#1D2B64"
+        style={I18nManager.isRTL && { transform: [{ rotate: '180deg' }] }}
+      />
     </TouchableOpacity>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

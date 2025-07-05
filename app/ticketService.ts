@@ -6,7 +6,9 @@ export const fetchUnifiedTickets = async (): Promise<Ticket[]> => {
   const token = await AsyncStorage.getItem('authToken');
 
   const [internalRes, externalRes] = await Promise.all([
-    fetch(`https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/tickets/user-tickets?token=${token}`),
+    fetch(`https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/tickets/user-tickets`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
     fetch('https://ticket-exchange-backend-gqdvcdcdasdtgccf.israelcentral-01.azurewebsites.net/api/external-transfer/my-transfers', {
       headers: { Authorization: `Bearer ${token}` },
     }),

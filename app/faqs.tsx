@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   View,
   Text,
@@ -7,90 +8,85 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import useTranslation from './i18n/useTranslation';
+import { I18nManager } from 'react-native';
 
+const rtlAlign = StyleSheet.create({
+  text: {
+    textAlign: I18nManager.isRTL ? 'left' : 'left',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+  },
+});
 export default function FaqsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+
+  const faqData = [
+    {
+      question: t('q1'),
+      answer: t('a1'),
+    },
+    {
+      question: t('q2'),
+      answer: t('a2'),
+    },
+    {
+      question: t('q3'),
+      answer: t('a3'),
+    },
+    {
+      question: t('q4'),
+      answer: t('a4'),
+    },
+    {
+      question: t('q5'),
+      answer: t('a5'),
+    },
+    {
+      question: t('q6'),
+      answer: t('a6'),
+    },
+    {
+      question: t('q8'),
+      answer: t('a8'),
+    },
+  ];
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: '#fff' }}
       contentContainerStyle={styles.container}
     >
-    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-      <Image
-        source={require('../assets/icons/arrow-left.png')}
-        style={styles.backIcon}
-      />
-    </TouchableOpacity>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Image
+          source={require('../assets/icons/arrow-left.png')}
+          style={[styles.backIcon, I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]}
+        />
+      </TouchableOpacity>
 
-      <Text style={styles.title}>FAQs</Text>
+      <Text style={styles.title}>{t('title')}</Text>
 
-      {faqData.map((faq, index) => (
-        <View key={index} style={styles.faqItem}>
-          <Text style={styles.question}>{faq.question}</Text>
-          <Text style={styles.answer}>{faq.answer}</Text>
-        </View>
-      ))}
+{faqData.map((faq, index) => (
+  <View key={index} style={styles.faqItem}>
+    <Text style={[styles.question, rtlAlign.text]}>{faq.question}</Text>
+    <Text style={[styles.answer, rtlAlign.text]}>{faq.answer}</Text>
+  </View>
+))}
 
-      {/* ✅ כפתור */}
       <TouchableOpacity style={styles.ctaButton} onPress={() => router.push('/my-tickets')}>
-        <Text style={styles.ctaText}>My Tickets</Text>
+        <Text style={styles.ctaText}>{t('cta')}</Text>
         <View style={styles.arrowCircle}>
-          <Image source={require('../assets/icons/next_white.png')} style={styles.arrowIcon} />
+          <Image source={require('../assets/icons/next_white.png')} style={[styles.arrowIcon, I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]} />
         </View>
       </TouchableOpacity>
 
       <Text style={styles.contact}>
-        For any further questions, feel free to reach us at{' '}
+        {t('contact')}{' '}
         <Text style={styles.email}>support@pocktick.com</Text>
       </Text>
     </ScrollView>
   );
 }
-
-const faqData = [
-  {
-    question: 'How do I know the ticket is valid and matches what was ordered?',
-    answer:
-      'Every ticket is reviewed by the PockTick team within 24 hours of upload. We verify the date, time, location, seat type, and price to ensure it matches the event details.',
-  },
-  {
-    question: 'How do you ensure the seller is trustworthy?',
-    answer:
-      'Private sellers must go through a strict one-time verification process including ID, photo, and video. Each person can have only one lifetime account. If a seller is caught cheating, they are permanently banned. In severe cases, legal action can be taken through PockTick.',
-  },
-  {
-    question: 'Why are tickets locked until opening?',
-    answer:
-      'To protect buyers. Tickets from private individuals stay locked until the buyer chooses to open them. If there’s a problem, we compare the time the ticket was opened with the official check-in time. If opened after check-in — the buyer is protected and refunded. If opened before — the responsibility lies with the buyer.',
-  },
-  {
-    question: 'When should I open the ticket?',
-    answer:
-      'Open your ticket just a few seconds before entering the event. This ensures full protection in case of a dispute.',
-  },
-  {
-    question: 'What happens if there was a problem after I opened the ticket?',
-    answer:
-      'You can file an appeal in the app. We investigate each case with the ticket company and respond accordingly.',
-  },
-  {
-    question: 'When does the money transfer to the seller?',
-    answer:
-      '24 hours after the event ends. This gives time for the buyer to report any issues before funds are released.',
-  },
-  {
-    question: 'Can I buy tickets from official ticket companies through PockTick?',
-    answer:
-      'Yes. Companies that work with us send tickets directly to your wallet without needing to contact a seller.',
-  },
-  {
-    question: 'How can I sell a ticket through PockTick?',
-    answer:
-      'After completing a one-time verification, private sellers can upload tickets and transfer them safely to buyers with full protection on both sides.',
-  },
-];
-
 const styles = StyleSheet.create({
   container: {
     padding: 20,
@@ -100,6 +96,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginBottom: 20,
+    marginTop: -12,
     alignSelf: 'flex-start',
   },
   backCircle: {
@@ -119,7 +116,7 @@ const styles = StyleSheet.create({
 title: {
   fontSize: 24,
   fontWeight: 'bold',
-  marginBottom: 30,
+  marginBottom: 20,
   color: '#1D2B64',
   textAlign: 'center',
   fontFamily: 'Poppins-Bold',
@@ -154,11 +151,8 @@ title: {
   },
 ctaButton: {
   position: 'relative',
-  backgroundColor: '#1D2B64',
-  borderRadius: 20,
   paddingVertical: 15,
   paddingHorizontal: 24,
-  alignItems: 'center',
   justifyContent: 'center',
   marginTop: 10,
   shadowColor: '#1D2B64',
@@ -167,7 +161,16 @@ ctaButton: {
   shadowRadius: 8,
   elevation: 6,
   marginBottom: 10,
+    backgroundColor: '#1D2B64',
+  borderRadius: 20,
+  height: 56,
+  flexDirection: 'row',
+  alignItems: 'center',
+  width: 335,
+  alignSelf: 'center',
+ 
 },
+
   ctaText: {
     color: '#fff',
     fontSize: 17,

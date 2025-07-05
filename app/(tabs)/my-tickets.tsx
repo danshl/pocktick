@@ -9,24 +9,33 @@ import {
   Animated,
   Easing,
   Platform,
-  StatusBar
+  StatusBar,
+  Modal,
+  Pressable,
+  I18nManager
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUserData } from '../useUserData';
 import { fetchUnifiedTickets } from '../ticketService';
 import { Ticket } from '../types';
-import { Modal, Pressable } from 'react-native'; // תוספת
-
-const statusLabels = ['All', 'Active', 'Pending', 'Transferred', 'Used'] as const;
+import useTranslation from '../i18n/useTranslation';
 
 export default function MyTicketsScreen() {
+  const { t } = useTranslation();
   const { tickets, setTickets } = useUserData();
   const [selectedStatus, setSelectedStatus] = useState<number>(0);  
   const [refreshing, setRefreshing] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
   const router = useRouter();
   const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  const statusLabels = [
+    t('all'),
+    t('active'),
+    t('pending'),
+    t('transferred'),
+    t('used')
+  ];
 
   const startRotation = () => {
     rotateAnim.setValue(0);
@@ -92,58 +101,68 @@ export default function MyTicketsScreen() {
   const renderGroupedTicket = ({ item }: { item: typeof groupedTickets[0] }) => (
     <View style={styles.outerFrame}>
       <View style={styles.imageContainer}>
-<View style={{ position: 'relative' }}>
-  <Image
-    source={
-      item.event?.imageUrl && item.event.imageUrl.trim() !== ''
-        ? { uri: item.event.imageUrl }
-        : require('../../assets/images/favicon.png')
-    }
-    style={styles.ticketImage}
-  />
-  {item.status === 2 && (
-    <View style={styles.imageOverlay} />
-  )}
-</View>
-        {item.tickets[0].isExternal && (
-          <Text style={{ fontSize: 12, color: '#1b2b68', marginTop: 4, left: 10 }}>
-            Uploaded by user
-          </Text>
-        )}
-<View style={styles.dateBox}>
-  {(() => {
-    const parts = item.event.date.split('/');
-    if (parts.length === 3) {
-      const [day, month, year] = parts;
-      const dateObj = new Date(`${year}-${month}-${day}`);
-      const isValid = !isNaN(dateObj.getTime());
+        <View style={{ position: 'relative' }}>
+          <Image
+            source={
+              item.event?.imageUrl && item.event.imageUrl.trim() !== ''
+                ? { uri: item.event.imageUrl }
+                : require('../../assets/images/favicon.png')
+            }
+            style={styles.ticketImage}
+          />
+          {item.status === 2 && <View style={styles.imageOverlay} />}
+        </View>
 
-      if (isValid) {
-        return (
-          <>
-            <Text style={styles.dateDay}>{parseInt(day, 10)}</Text>
-            <Text style={styles.dateMonth}>
-              {dateObj.toLocaleString('en-US', { month: 'long' })} {}
+        <View style={{ width: '100%', paddingHorizontal: 10 }}>
+          {item.tickets[0].isExternal && (
+            <Text style={{
+              fontSize: 12,
+              color: '#1b2b68',
+              marginTop: 4,
+              textAlign: I18nManager.isRTL ? 'right' : 'left',
+            }}>
+              {t('uploadedByUser')}
             </Text>
-          </>
-        );
-      }
-    }
+          )}
+        </View>
 
-    return <Text style={styles.dateDay}>{item.event.date}</Text>;
-  })()}
-</View>
+        <View style={styles.dateBox}>
+          {(() => {
+            const parts = item.event.date.split('/');
+            if (parts.length === 3) {
+              const [day, month, year] = parts;
+              const dateObj = new Date(`${year}-${month}-${day}`);
+              const isValid = !isNaN(dateObj.getTime());
+
+              if (isValid) {
+                return (
+                  <>
+                    <Text style={styles.dateDay}>{parseInt(day, 10)}</Text>
+                    <Text style={styles.dateMonth}>
+                      {dateObj.toLocaleString('en-US', { month: 'long' })}{' '}
+                    </Text>
+                  </>
+                );
+              }
+            }
+            return <Text style={styles.dateDay}>{item.event.date}</Text>;
+          })()}
+        </View>
+
         <View
           style={[styles.statusContainer, {
             backgroundColor:
-            item.status === 1 ? '#FC803B' :  // Pending - כתום
-            item.status === 2 ? '#339CFF' : // Transferred - כחול
-            '#4CAF50'      
+              item.status === 1 ? '#FC803B' :  // Pending
+              item.status === 2 ? '#339CFF' : // Transferred
+              '#4CAF50'                       // Active
           }]}
         >
-          <Text style={styles.statusText}>{statusLabels[item.status+1]}</Text>
+          <Text style={styles.statusText}>
+            {statusLabels[item.status + 1]}
+          </Text>
         </View>
       </View>
+
       <View style={styles.detailsContainer}>
         <Text style={styles.eventTitle}>{item.event.name}</Text>
         <View style={styles.locationRow}>
@@ -158,8 +177,8 @@ export default function MyTicketsScreen() {
             style={styles.detailsButton}
             onPress={() => router.push({ pathname: '/ticket-details', params: { tickets: JSON.stringify(item.tickets) } })}
           >
-            <Text style={styles.detailsButtonText}>Details</Text>
-            <Image source={require('../../assets/icons/chevron.png')} style={styles.detailsArrow} />
+            <Text style={styles.detailsButtonText}>{t('details')}</Text>
+            <Image source={require('../../assets/icons/chevron.png')} style={[styles.detailsArrow, I18nManager.isRTL && { transform: [{ rotate: '180deg' }] }]} />
           </TouchableOpacity>
         </View>
       </View>
@@ -171,74 +190,85 @@ export default function MyTicketsScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#1B2B68" />
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerIconLeft}>
-          <Image source={require('../../assets/icons/hamburger.png')} style={styles.iconImage} />
+          <Image source={require('../../assets/icons/hamburger.png')} style={[styles.iconImage, I18nManager.isRTL && { transform: [{ rotate: '180deg' }] }]} />
         </TouchableOpacity>
         <Image source={require('../../assets/icons/logo_full_white.png')} style={styles.logo} />
         <TouchableOpacity style={styles.headerIconRight}>
           <Image source={require('../../assets/icons/notfic.png')} style={styles.iconImage} />
         </TouchableOpacity>
       </View>
-<View style={styles.singleFilterWrapper}>
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={() => setStatusMenuVisible(true)}
-      >
-<View style={styles.filterButtonContent}>
-  <Image
-    source={require('../../assets/icons/filter-4.png')}  
-    style={styles.filterButtonIcon}
-  />
-  <Text style={styles.filterButtonText}>
-    {statusLabels[selectedStatus]}
-  </Text>
-</View>
-      </TouchableOpacity>
 
-  <Modal
-    transparent
-    visible={statusMenuVisible}
-    animationType="fade"
-    onRequestClose={() => setStatusMenuVisible(false)}
-  >
-    <TouchableOpacity
-      style={styles.modalOverlay}
-      onPress={() => setStatusMenuVisible(false)}
-    >
-      <View style={styles.modalMenu}>
-        {statusLabels.map((label, index) => (
-          <Pressable
-            key={index}
-            style={styles.menuItem}
-            onPress={() => {
-              setSelectedStatus(index);
-              setStatusMenuVisible(false);
-            }}
+      <View style={styles.singleFilterWrapper}>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setStatusMenuVisible(true)}
+        >
+          <View style={styles.filterButtonContent}>
+            <Image
+              source={require('../../assets/icons/filter-4.png')}  
+              style={styles.filterButtonIcon}
+            />
+            <Text style={styles.filterButtonText}>
+              {statusLabels[selectedStatus]}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <Modal
+          transparent
+          visible={statusMenuVisible}
+          animationType="fade"
+          onRequestClose={() => setStatusMenuVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            onPress={() => setStatusMenuVisible(false)}
           >
-            <Text style={styles.menuItemText}>{label}</Text>
-          </Pressable>
-        ))}
+            <View style={styles.modalMenu}>
+              {statusLabels.map((label, index) => (
+                <Pressable
+                  key={index}
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setSelectedStatus(index);
+                    setStatusMenuVisible(false);
+                  }}
+                >
+                  <Text style={styles.menuItemText}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </View>
-    </TouchableOpacity>
-  </Modal>
-</View>
-<FlatList
-  data={groupedTickets}
-  renderItem={renderGroupedTicket}
-  keyExtractor={item => `${item.event.id}-${item.status}-${item.transactionId ?? 'none'}-${item.tickets.map(t => t.id).join('-')}`}
-  contentContainerStyle={styles.ticketList}
-  showsVerticalScrollIndicator={false}
-  refreshing={refreshing}
-  onRefresh={refreshTickets}
-  ListEmptyComponent={
+
+      <FlatList
+        data={groupedTickets}
+        renderItem={renderGroupedTicket}
+        keyExtractor={item =>
+          `${item.event.id}-${item.status}-${item.transactionId ?? 'none'}-${item.tickets.map(t => t.id).join('-')}`
+        }
+        contentContainerStyle={styles.ticketList}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={refreshTickets}
+        ListEmptyComponent={
     <Text style={styles.emptyText}>
-      No {statusLabels[selectedStatus]} tickets found.
+      {
+        selectedStatus === 0 ? t('noTickets_all') :
+        selectedStatus === 1 ? t('noTickets_active') :
+        selectedStatus === 2 ? t('noTickets_pending') :
+        selectedStatus === 3 ? t('noTickets_transferred') :
+        selectedStatus === 4 ? t('noTickets_used') :
+        ''
+      }
     </Text>
-  }
-/>
+
+        }
+      />
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: '#fff' },
   tabBarWrapper: {
@@ -310,7 +340,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 6
   },
-  eventTitle: { fontSize: 18, fontFamily: 'Poppins-bold', color: '#000' },
+  eventTitle: { fontSize: 18, fontFamily: 'Poppins-bold', color: '#000' ,paddingRight:10,},
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   locationIcon: { width: 14, height: 14, tintColor: '#888' },
   locationText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: '#888' },

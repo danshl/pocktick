@@ -11,11 +11,14 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
-  ScrollView
+  ScrollView,
+  I18nManager
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+import useTranslation from './i18n/useTranslation';
+
 export default function OpenTicketsScreen() {
   const router = useRouter();
   const { transferId } = useLocalSearchParams();
@@ -25,9 +28,11 @@ export default function OpenTicketsScreen() {
   const [alreadyOpened, setAlreadyOpened] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
+  const { t } = useTranslation();
 
   useEffect(() => {
     const checkIfAlreadyOpened = async () => {
+      
       try {
         const token = await AsyncStorage.getItem('authToken');
         const res = await fetch(
@@ -36,9 +41,11 @@ export default function OpenTicketsScreen() {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-
+console.log(res);
         if (res.ok) {
+          
           const isOpened = await res.json();
+          console.log(isOpened,"dd");
           setAlreadyOpened(isOpened);
         }
       } catch (err) {
@@ -120,14 +127,14 @@ export default function OpenTicketsScreen() {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Image source={require('../assets/icons/arrow-left.png')} style={styles.backIcon} />
+        <Image source={require('../assets/icons/arrow-left.png')} style={[styles.backIcon, I18nManager.isRTL && { transform: [{ rotate: '180deg' }]}]}/>
       </TouchableOpacity>
 
       <Image source={require('../assets/icons/logo_full_blue.png')} style={styles.logo} />
 
       {alreadyOpened ? (
         <>
-          <Text style={styles.infoText}>These tickets are already opened. You can view the QR codes now. Enjoy!</Text>
+          <Text style={styles.infoText}>{t('already_opened_text')}</Text>
           <TouchableOpacity
             style={styles.holdCircleWrapper}
             onPress={() => openTickets(true)}
@@ -141,12 +148,11 @@ export default function OpenTicketsScreen() {
         </>
       ) : (
         <>
-          <Text style={styles.infoText}>
-            Once opened, the responsibility for the tickets is transferred to you. We recommend opening
-            them only shortly before the event.
-          </Text>
+          <Text style={styles.infoText}>{t('open_warning')}</Text>
 
-          <Text style={styles.pressText}>Press & Hold 3 Seconds</Text>
+
+          <Text style={styles.pressText}>{t('press_and_hold')}</Text>
+
 
           <Animated.View style={[styles.holdCircleWrapper, { transform: [{ scale }] }]}>
             <TouchableOpacity
@@ -169,7 +175,8 @@ export default function OpenTicketsScreen() {
   <>
     <TouchableOpacity style={styles.helpBtn} onPress={() => setShowHelpModal(true)}>
       <Image source={require('../assets/icons/info.png')} style={styles.helpIcon} />
-      <Text style={styles.helpText}>Why can't I see my tickets right now?</Text>
+      <Text style={styles.helpText}>{t('why_cant_see_tickets')}</Text>
+
     </TouchableOpacity>
 
     <Modal
@@ -180,18 +187,14 @@ export default function OpenTicketsScreen() {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Why can't I see my tickets?</Text>
+          <Text style={styles.modalTitle}>{t('why_cant_see_tickets')}</Text>
+
           <ScrollView>
-            <Text style={styles.modalText}>
-              Our system records the exact time you opened the ticket. If there's an issue entering the event,
-              we check the check-in timestamp recorded by the venue. If your opening time is after the official check-in,
-              you're fully protected and will get your money back. If the opening time is before check-in, we can't verify
-              your claim, so we recommend opening the ticket just a few seconds before the show starts.{"\n\n"}
-              Don't worry! We verify within 24 hours that the uploaded image matches the ticket description.
-            </Text>
+            <Text style={styles.modalText}>{t('why_cant_see_tickets_explanation')}</Text>
+
           </ScrollView>
           <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowHelpModal(false)}>
-            <Text style={styles.modalCloseText}>Close</Text>
+            <Text style={styles.modalCloseText}>{t('close')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -304,12 +307,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     color: '#1D2B64',
     marginBottom: 12,
+    textAlign: 'left'
   },
   modalText: {
     fontSize: 14,
     fontFamily: 'Poppins-Regular',
     color: '#444',
     lineHeight: 22,
+      textAlign: 'left'
   },
   modalCloseBtn: {
     marginTop: 20,

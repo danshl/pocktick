@@ -1,8 +1,11 @@
 // app/my-coupons.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
+import useTranslation from '../i18n/useTranslation';
 
 export default function MyCouponsScreen() {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
       <Image
@@ -10,10 +13,9 @@ export default function MyCouponsScreen() {
         style={styles.image}
         resizeMode="contain"
       />
-    <Text style={styles.subtitle}>
-      The Coupons feature is not available yet.{' '}
-      <Text style={styles.highlight}>Stay tuned for updates!</Text>
-    </Text>
+
+      <Text style={styles.subtitle}>{t('couponsUnavailable')}</Text>
+      <Text style={styles.highlight}>{t('couponsStayTuned')}</Text>
     </View>
   );
 }
@@ -31,19 +33,13 @@ const styles = StyleSheet.create({
     height: 180,
     marginBottom: 24,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#1D2B64',
-    marginBottom: 12,
-  },
   subtitle: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
     fontFamily: 'Poppins-Regular',
   },
-    highlight: {
+  highlight: {
     fontSize: 16,
     color: '#1b2b68',
     textAlign: 'center',
